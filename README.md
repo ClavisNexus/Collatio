@@ -16,7 +16,7 @@ Under construction; nothing is released. Done so far:
 - the ledger core: signed notes (Ed25519), checkpoint and receipt bodies, leaves, and RFC 9162 inclusion and consistency proofs;
 - RFC 3161 time-stamp tokens: a strict DER reader, X.509 certificates, CMS SignedData, ESS signing-certificate attributes, chains to the registry roots at genTime, and RSASSA-PKCS1-v1_5 written on crypto-bigint (no `rsa` crate). Checked on the two real tokens Clavis uses and 800 single-byte flips of them: Collatio never accepts what the TypeScript refused, and refuses 10 flips the TypeScript let through (corrupted headers and unused certificates). RSA also passes Project Wycheproof;
 - the statement field kinds, checked against the TypeScript reader on 1,253 kind strings and 2,040 values;
-- the genesis formats drafted in `FORMATS.md` (some points open for review): the envelope with the new `aud`, `registry@1`, `dimension@1`, the trust chain (Master pin → sealer nomination → aggregated JWKS and `catalog@1`), holder and app receipts with `accepted@1`, `ledger.receipt@1` and `key.opening@1`, delegation records, event chains (`event@1`, `event.content@1`, `state.snapshot@1`) and the ledger evidence bundle `ledger.bundle@1`;
+- the genesis formats in `FORMATS.md`: the envelope with the new `aud`, `registry@1`, `dimension@1`, the trust chain (Master pin → sealer nomination → aggregated JWKS and `catalog@1`), holder and app receipts with `accepted@1`, `ledger.receipt@1` and `key.opening@1`, delegation records, event chains (`event@1`, `event.content@1`, `state.snapshot@1`) and the ledger evidence bundle `ledger.bundle@1`;
 - every operation of the first release (`ABI.md`), checked on 132 calls written by an independent issuer (`tools/genesis-vectors.mjs`, node:crypto only) and run both natively and as WebAssembly.
 
 - the JavaScript host (`js/`, npm `@clavis.nexus/collatio`, no dependencies) and the Go host (`go/`, `github.com/clavisnexus/collatio/go` on wazero). Both pass the same conformance scenarios (`conformance/hosts-1.json`: ABI version and export checks, recovery after a trap, replacing an instance over its memory limit, running only catalog-listed unrevoked modules, following a revoked verifier to its successor, marking a stale catalog) and give the 132 answers above.
@@ -31,7 +31,7 @@ Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node 
 |---|---|
 | `crates/collatio` | The verifier. `no_std` + `alloc` for `wasm32v1-none`; std on the host for tests |
 | `ABI.md` | `collatio-abi@1`: how a host calls the module, the operations and the reasons |
-| `FORMATS.md` | The byte-level formats from Clavis genesis on (draft) |
+| `FORMATS.md` | The byte-level formats from Clavis genesis on |
 | `js/` | `@clavis.nexus/collatio`: the JavaScript host (`npm test` after `./build.sh`) |
 | `go/` | `github.com/clavisnexus/collatio/go`: the Go host on wazero (`go test ./...` after `./build.sh`) |
 | `conformance/` | Host scenarios both hosts must pass, and the small modules they run (`tools/conformance-modules.mjs`) |

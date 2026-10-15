@@ -1,6 +1,6 @@
-# Formats (draft)
+# Formats
 
-The byte-level formats Collatio verifies from Clavis genesis on. Parts marked **Open** are proposals awaiting review; everything else follows decisions already made in the Clavis design. Formats that genesis does not change (RFC 8785, digests, the envelope challenge, `webauthn@1`, `shown@1`, key records, commitments, signed notes, leaves, Merkle proofs, TSA tokens) are implemented and described in the code.
+The byte-level formats Collatio verifies from Clavis genesis on. They follow the Clavis design (genesis.md); the points this document settled beyond it were confirmed on 2026-10-15. Formats that genesis does not change (RFC 8785, digests, the envelope challenge, `webauthn@1`, `shown@1`, key records, commitments, signed notes, leaves, Merkle proofs, TSA tokens) are implemented and described in the code.
 
 ## 0. Conventions
 
@@ -31,7 +31,7 @@ Unchanged from the current design except `aud`.
 
 The WebAuthn challenge is SHA-256(UTF-8(`suite`) ‖ 0x00 ‖ UTF-8(JCS(envelope))).
 
-- The writers at genesis are `account`, `org`, `domain`, `document` and `request` (genesis.md §5.2). They are named by the registry's templates, not listed in Collatio: the envelope only requires `<writer>` to be `[a-z][a-z0-9_]{0,31}` and something after the colon. **Open:** this keeps a new writer a registry change instead of a module release.
+- The writers at genesis are `account`, `org`, `domain`, `document` and `request` (genesis.md §5.2). They are named by the registry's templates, not listed in Collatio: the envelope only requires `<writer>` to be `[a-z][a-z0-9_]{0,31}` and something after the colon. So a new writer is a registry change, not a module release.
 - An extension Collatio knows (`shown@1`) is checked whether or not `crit` names it. An unknown one is not read; when `crit` names it, the receipt is refused (`extension_unknown`).
 
 ## 2. Statements and `registry@1`
@@ -48,7 +48,7 @@ A statement is `{ "type": "<type ID>", <fields> }`. Which fields a type has, the
 - Field names `[a-z][a-z0-9_]*`. A trailing `?` marks an optional field.
 - The kind strings and their meaning are rules inside Collatio. The current kinds carry over unchanged: `id`, `uuid`, `app`, `subject`, `credential`, `digest`, `bytes32`, `hex64`, `domain`, `email`, `text(n)`, `int(min,max)`, `oneOf(a|b|…)`, `sortedSet(kind,max)`, `nullable(kind)`. New: `org`, an Org ID `<cell>.<UUID>` with the cell `[a-z]{2}[1-9][0-9]{0,2}`. A kind string must be in canonical form; an unknown or malformed one makes the whole registry unusable. Two readings are stricter than before (§0): `bytes32` must be canonical Base64URL, and `int(…)` values must be written as integers. `credential` stays as before (Base64URL characters, any length that can be Base64URL, ≤ 1366).
 - The `aud` template is `[a-z0-9:._-]` text with `<field>` placeholders (as now). It starts with the literal `<writer>:`. Each placeholder names a required field, or `signer` for the envelope's signer (new). The result must be a valid `aud` (§1).
-- **Open:** field names `type` and `signer` are reserved, so `<signer>` never means a statement field. No current statement has a field named `signer`.
+- Field names `type` and `signer` are reserved, so `<signer>` never means a statement field. No current statement has a field named `signer`.
 - A registry document only grows: a new document repeats every earlier type unchanged. Collatio reads only a document whose digest equals the dimension's `registry`, and only when the catalog lists that digest in `registries` and the dimension's digest in `dimensions`.
 
 ## 3. `dimension@1`
@@ -85,7 +85,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 ```
 
 - **Core**: every member except `attestations` and `disclosures`. The subject of an attestation is `digestOf(core)`.
-- `attestations`: 1–8 objects; `disclosures` (holder only, optional): 1–8 objects. Each has a `type` that is a type ID. An attestation or disclosure of an unknown type is passed over unread; a known one that fails refuses the receipt. **Open:** the limit of 8.
+- `attestations`: 1–8 objects; `disclosures` (holder only, optional): 1–8 objects. Each has a `type` that is a type ID. An attestation or disclosure of an unknown type is passed over unread; a known one that fails refuses the receipt.
 - Order of checks, so a receipt gets one reason: shape, envelope, dimension (digest, catalog), registry, statement, `aud`, extensions, receipt kind, the caller's expectations, the proof, disclosures, attestations.
 - Required: at least one valid `accepted@1`, and a valid `ledger.receipt@1` for the receipt anchor.
 
@@ -97,7 +97,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 
 - `subject` is the core digest; `at` is Unix seconds; `kid` names a key in the JWKS whose `${ns}-slot` is `sign-receipt`.
 - `sig` is the ES256 signature as raw r‖s (64 bytes, Base64URL) over UTF-8(JCS(the attestation without `sig`)).
-- **Open:** `alg` other than `ES256` (a post-quantum attestation) is skipped as unknown rather than refused, so a second attestation can be added later without failing old verifiers. It must still have the six members, a digest `subject` and an integer `at`.
+- An `accepted@1` with an `alg` other than `ES256` (a post-quantum attestation) is skipped as unknown rather than refused, so a second attestation can be added later without failing old verifiers. It must still have the six members, a digest `subject` and an integer `at`.
 
 ### 4.2 `ledger.receipt@1`
 
@@ -106,7 +106,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 ```
 
 - The note (≤ 4096 characters, as the current binding's receipt) is a signed note whose body is a ledger receipt. It verifies with the key the catalog lists for the log named in the origin (`<host>/ledger/<log id>`), and that key's slot is `ledger-log`. The signature line's name is the kid.
-- **Open:** Collatio checks that `<host>` is a lowercase host but does not tie it to the instance. The caller sees the origin in the `ledger_note` answer. Tying it to the nomination's `instance_id` is possible when the ledger host always equals it.
+- Collatio checks that `<host>` is a lowercase host but does not tie it to the instance; the caller sees the origin in the `ledger_note` answer.
 - The log is a first-party shard (`first-party.<n>`) for the receipt anchor and for disclosed key records.
 - The leaf hash must be one of the leaves computable from the receipt: the receipt anchor `{ v: 1, c }` with c = hex(SHA-256(UTF-8(JCS({ type: "receipt.anchor@1", envelope: digestOf(envelope), proof: digestOf(holder proof) })))) — the app receipt uses its `proof` digest — or a disclosed key record's commitment. A ledger receipt matching none of them refuses the receipt.
 
@@ -118,7 +118,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 
 - The commitment of `{salt, record}` (`clavis.commit.v1`) is a leaf covered by one of the receipt's `ledger.receipt@1`.
 - The record binds the receipt's key: same `credential`, `public_key` and `alg`; same `rp` as the envelope; and, for `account` dimensions, the same `signer`.
-- **Open:** at most one `key.opening@1` per receipt (a receipt has one key).
+- At most one `key.opening@1` per receipt (a receipt has one key).
 
 ## 5. Trust
 
@@ -143,8 +143,8 @@ The current `platform.sealer.nominate` document, signed by the Master:
 ```
 
 - Each key carries its slot in `${ns}-slot` and the sealer's signature in `${ns}-sealer-signature` (one signature per key, as now): ES256 raw r‖s over UTF-8(JCS({ "version": 1, "purpose": "signed-jwks-child", "protocol_ns": ns, "slot": slot, "public_jwk": { kty, crv, x, y (null for OKP), kid, alg } })).
-- `ns` is `[a-z][a-z0-9]{1,31}` (`clavis`). **Open:** Collatio reads it from the field names, as the current reader does, and requires one `ns` across the document, rather than taking it from the caller.
-- **Open:** the current keys also carry `x-${ns}-signature-version`, `-signature-purpose`, `-signature-alg`, `-key-slot` and `-key-generation`. The proposal drops all of them: version and purpose are fixed inside the signed payload, the algorithm is ES256, the slot moves to `${ns}-slot`, and genesis kids carry a thumbprint tag instead of a generation (so `generation` leaves the payload too).
+- `ns` is `[a-z][a-z0-9]{1,31}` (`clavis`). Collatio reads it from the field names, as the pre-genesis reader does, and requires one `ns` across the document.
+- The pre-genesis keys also carry `x-${ns}-signature-version`, `-signature-purpose`, `-signature-alg`, `-key-slot` and `-key-generation`. Genesis drops all of them: version and purpose are fixed inside the signed payload, the algorithm is ES256, the slot moves to `${ns}-slot`, and kids carry a thumbprint tag instead of a generation (so `generation` leaves the payload too).
 - A key has exactly `kty`, `crv`, `x`, `y` (EC only), `kid`, `alg`, `${ns}-slot` and `${ns}-sealer-signature`; P-256 keys are `ES256`, Ed25519 keys are `OKP`/`EdDSA`. Unknown top-level members are not read (so members can be added later).
 
 ### 5.3 `catalog@1`
@@ -161,8 +161,8 @@ As in the design (§10.1), signed by the sealer:
 ```
 
 - `verifiers`: at least one, digests unique; `source.repo` is an `https://` URL, `tag` printable ASCII, `commit` 40 or 64 lowercase hex. `revoked`: each `verifier` and `successor` is a listed verifier, they differ, and a verifier is revoked once; `reason` is trimmed text ≤ 500. `registries`, `dimensions`: digests without duplicates, in the order they were added. `logs`: `first-party.<n>` or `anchor`; a log appears once per kid, so twice while its key rotates.
-- **Open:** `issued_at` as Unix seconds (the design sketch shows a date string; Clavis types use integers).
-- **Open:** the signature as a `signature` member over UTF-8(JCS(catalog without `signature`)), with `kid` equal to the nominated sealer's kid.
+- `issued_at` is Unix seconds (Clavis types hold integers).
+- The signature is the `signature` member, over UTF-8(JCS(catalog without `signature`)), with `kid` equal to the nominated sealer's kid.
 
 ## 6. Operations
 
@@ -181,7 +181,7 @@ The records keep their pre-genesis shapes (`mandate.terms@1`, `mandate.use_reque
 | `mandate.grant.on_behalf@1` | the same, and `org` (Org ID), `domain` | in the name of an organization |
 
 - Clavis's signature stays in `sigs` (1–4 of `{ kid, alg, sig }`): ES256 raw r‖s over UTF-8(JCS(record without `sigs`)), by a JWKS key in slot `mandate-attest`. A signature with another `alg` is not read; at least one ES256 one must verify. A record's digest is `digestOf(record without sigs)`.
-- The app's JWT (`app.jwt`, compact JWS) is checked as before: `EdDSA` with an OKP key or `ES256` with an EC key; `iss` = `app:<app>`, `app_id` = `<app>`, `aud` = `clavis-ledger`, `body_sha256` = hex(SHA-256(UTF-8(JCS(request)))), and `iat` − 30 ≤ `at` ≤ `exp` + 30. **Open:** the header and payload are read by the strict reader (a repeated key is refused) and `iat`, `exp` must be integers; the pre-genesis reader took any JSON number and let a repeated key win.
+- The app's JWT (`app.jwt`, compact JWS) is checked as before: `EdDSA` with an OKP key or `ES256` with an EC key; `iss` = `app:<app>`, `app_id` = `<app>`, `aud` = `clavis-ledger`, `body_sha256` = hex(SHA-256(UTF-8(JCS(request)))), and `iat` − 30 ≤ `at` ≤ `exp` + 30. The header and payload are read by the strict reader (a repeated key is refused) and `iat`, `exp` must be integers; the pre-genesis reader took any JSON number and let a repeated key win.
 - The first use's totals must start from nothing. The pre-genesis check compared totals only with the use before, so a first use could claim an amount already spent; Collatio refuses it (`mandate_totals`).
 - The `mandate_history` operation reads `trust`, `grant` (the receipt string), `terms` (string), `uses` (strings in `seq` order) and `close` (string, optional). It checks the grant receipt fully (§4), then the terms against the grant's `terms`, then each use against the one before, then the close against the last use.
 
@@ -195,10 +195,10 @@ Account and Org state are chains of skeletons (genesis.md §19.2). A skeleton li
 ```
 
 - `actor`: an account ID (`<cell>.<43 Base64URL characters>`) or an Org ID (`<cell>.<UUID>`). `seq` ≥ 1; `prev` is null exactly when `seq` is 1. `envelope` is the envelope digest when a receipt caused the change, else null. `leaves`: 0–16 leaf `c` values, without duplicates.
-- `attest`: Ed25519 over UTF-8(JCS(skeleton without `attest`)) by a JWKS key in slot `state-attest`. The skeleton's digest is `digestOf(skeleton without attest)`; the next skeleton's `prev` is that digest. **Open:** `alg` is `EdDSA` (the JOSE name, as the JWKS key says); the design sketch wrote `Ed25519`.
+- `attest`: Ed25519 over UTF-8(JCS(skeleton without `attest`)) by a JWKS key in slot `state-attest`. The skeleton's digest is `digestOf(skeleton without attest)`; the next skeleton's `prev` is that digest. `alg` is `EdDSA`, the JOSE name the JWKS key carries.
 - Content (`event.content@1`), kept by the writer as `{ salt, change, at, payload, receipt }`: `salt` 32 bytes Base64URL; `change` a type ID; `at` Unix seconds; `payload` an object; `receipt` the holder receipt string when the signer's receipt caused the change, else null. `commit` = `sha256:` + Base64URL(SHA-256(UTF-8(`clavis.event.v1`) ‖ salt ‖ UTF-8(JCS({ type: "event.content@1", change, at, payload, receipt })))).
 - Snapshot (`state.snapshot@1`): `{ type, actor, seq, head, state, attest }`: the state after event `seq`, whose skeleton digest is `head`, signed like a skeleton.
-- Head leaf (`state.head@1`): c = hex(SHA-256(UTF-8(`clavis.commit.v1`) ‖ salt ‖ UTF-8(JCS({ type: "state.head@1", seq, head })))). **Open:** the aggregated head (`state.heads@1`) waits until aggregation is built (§19.4 says it comes when leaves grow).
+- Head leaf (`state.head@1`): c = hex(SHA-256(UTF-8(`clavis.commit.v1`) ‖ salt ‖ UTF-8(JCS({ type: "state.head@1", seq, head })))). The aggregated head (`state.heads@1`) is specified when aggregation is built (genesis.md §19.4: when leaves grow).
 - The `chain` operation reads `trust`, `events` (skeleton strings in `seq` order), `from` (the digest before the first skeleton, or null when it starts at 1), `contents` (optional `{ seq, content }` with content strings) and `snapshot` (optional string). It checks every signature and link, opens the contents given, and checks the snapshot against the skeleton at its `seq`.
 
 ## 9. Ledger evidence bundle (`ledger.bundle@1`)
@@ -212,7 +212,7 @@ The pre-genesis bundle v1 without its JWKS copy, since trust comes from `trust`:
   "anchor": { "index": 3, "checkpoint": "<note>", "inclusion": [ … ], "tsa": [ { "response": "<base64 DER>" } ] } }   // optional
 ```
 
-- `log`: a first-party shard or an Org ID (the Org's log). Notes of first-party shards and `anchor` verify with the keys the catalog lists; **Open:** notes of an Org's log verify with any JWKS key in slot `ledger-log`, as now, because the catalog does not list Org logs.
+- `log`: a first-party shard or an Org ID (the Org's log). Notes of first-party shards and `anchor` verify with the keys the catalog lists; notes of an Org's log verify with any JWKS key in slot `ledger-log`, as now, because the catalog does not list Org logs.
 - The receipt and the checkpoint have the origin `<host>/ledger/<log>`; the receipt's index and leaf hash are the bundle's; the inclusion proof leads from the leaf to the checkpoint root.
 - `opening`: the commitment of `{ salt, record }` (`clavis.commit.v1`) is the leaf's `c`. The record is the app's JSON (RFC 8785 numbers; repeated keys refused).
 - `anchor`: the anchor leaf `{ v: 1, c: hex(SHA-256(UTF-8(checkpoint body))) }` is in the anchor checkpoint (origin `<same host>/ledger/anchor`), and each TSA token stamps the anchor checkpoint body. A token counts when it verifies against the TSA registry at its genTime; tokens that do not verify are not counted (as now).
