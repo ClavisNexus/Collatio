@@ -43,10 +43,14 @@ pub struct Expect<'a> {
     pub signer: Option<&'a str>,
 }
 
+/// Where a ledger receipt places a leaf: the log, the index, the note's origin and the leaf hash,
+/// so a caller can fetch a checkpoint and an inclusion proof without reading the receipt itself.
 #[derive(Clone, Debug)]
 pub struct LedgerPlace {
     pub log: String,
     pub index: u64,
+    pub origin: String,
+    pub leaf_hash: [u8; 32],
 }
 
 #[derive(Clone, Debug)]
@@ -391,6 +395,8 @@ pub fn verify_receipt(
                 let place = LedgerPlace {
                     log: verified.log,
                     index: r.index,
+                    origin: r.origin,
+                    leaf_hash: r.leaf_hash,
                 };
                 if r.leaf_hash == anchor_leaf {
                     anchor = Some(place);

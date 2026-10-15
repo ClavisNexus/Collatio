@@ -227,6 +227,8 @@ fn op_receipt(outer: &Value, kind: Kind) -> Result<Object, Reason> {
         Some(r) => Value::Object(obj(alloc::vec![
             ("log", Value::from(r.place.log.as_str())),
             ("index", uint(r.place.index)),
+            ("origin", Value::from(r.place.origin.as_str())),
+            ("leaf_hash", std_b64(&r.place.leaf_hash)),
             ("at", int(r.at)),
         ])),
     };
@@ -256,6 +258,8 @@ fn op_receipt(outer: &Value, kind: Kind) -> Result<Object, Reason> {
             Value::Object(obj(alloc::vec![
                 ("log", Value::from(v.anchor.log.as_str())),
                 ("index", uint(v.anchor.index)),
+                ("origin", Value::from(v.anchor.origin.as_str())),
+                ("leaf_hash", std_b64(&v.anchor.leaf_hash)),
             ])),
         ),
     ];

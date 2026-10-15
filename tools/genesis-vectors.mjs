@@ -245,6 +245,9 @@ function note(body, key, kid) {
 
 const leafHash = (c) => sha256(Buffer.concat([Buffer.from([0]), Buffer.from(jcs({ v: 1, c }))]));
 
+/** Where the answer says a ledger receipt places leaf `c` (ABI.md: `anchor`, `key_record`). */
+const placeOf = (c, index, log = "first-party.0") => ({ log, index, origin: `${HOST}/ledger/${log}`, leaf_hash: b64(leafHash(c)) });
+
 function ledgerReceipt(c, index, { log = "first-party.0", key = ledgerFp0, kid = KEYS.fp0.kid } = {}) {
   const body = `clavis.ledger.receipt/v1\n${HOST}/ledger/${log}\n${index}\n${b64(leafHash(c))}\n`;
   return { type: "ledger.receipt@1", note: note(body, key, kid) };
@@ -502,11 +505,11 @@ const holderAnswer = (place, extra = {}) => ({
   key: KEY,
   ...extra,
 });
-ok("receipt", receiptCall(holder), holderAnswer({ log: "first-party.0", index: 41 }, { key_record: null }));
+ok("receipt", receiptCall(holder), holderAnswer(placeOf(accountAnchor, 41), { key_record: null }));
 ok(
   "receipt: key record disclosed",
   receiptCall(holderDisclosed),
-  holderAnswer({ log: "first-party.0", index: 41 }, { key_record: { log: "first-party.0", index: 3, at: keyRecord.at } }),
+  holderAnswer(placeOf(accountAnchor, 41), { key_record: { ...placeOf(openingC(keyRecord), 3), at: keyRecord.at } }),
 );
 ok("receipt: no expectations", receiptCall(holder, { expect: null }), { type: "receipt@1" });
 {
@@ -648,7 +651,7 @@ no(
 // app dimension
 ok("receipt: app dimension, holder", receiptCall(appHolder, { expect: { statement: "app.sign@1", aud: `request:${REQUEST}`, signer: PAIRWISE } }), {
   type: "receipt@1",
-  anchor: { log: "first-party.0", index: 42 },
+  anchor: placeOf(appAnchor, 42),
   counter: 8,
 });
 ok("app_receipt", appCall(appReceipt), {
@@ -657,7 +660,7 @@ ok("app_receipt", appCall(appReceipt), {
   envelope: appEnvelope,
   dimension: { digest: digestOf(appDim), name: "app_sign", verifier: VERIFIER, registry: digestOf(registry), signer: "pairwise" },
   accepted: [{ kid: KEYS.signReceipt.kid, at: IAT + 1 }],
-  anchor: { log: "first-party.0", index: 42 },
+  anchor: placeOf(appAnchor, 42),
 });
 ok("app_receipt: with the holder proof", appCall(appReceipt, { holderProof: appProof }), { type: "receipt.app@1" });
 no("app_receipt: another holder proof", appCall(appReceipt, { holderProof: accountProof }), "holder_proof");
@@ -681,7 +684,7 @@ no(
   ok(
     "app_receipt: unknown extension that is not critical",
     appReceiptIn(dim, { ext: { "other@1": { any: [1] }, "shown@1": shown } }),
-    { type: "receipt.app@1", anchor: { log: "first-party.0", index: 43 } },
+    { type: "receipt.app@1", anchor: placeOf(anchorC({ ...appEnvelope, dimension: digestOf(dim), ext: { "other@1": { any: [1] }, "shown@1": shown } }, digestOf(appProof)), 43) },
   );
   no(
     "app_receipt: unknown extension that is critical",

@@ -52,7 +52,7 @@ FORMATS.md describes the documents.
 |---|---|---|
 | `trust` | `trust` | `instance`, `sealer`, `issued_at`, `keys` (`kid`, `slot`, `alg`), `logs`, `verifiers`, `revoked`, `registries`, `dimensions` |
 | `proof` | `envelope`, `proof`, `key` (JSON strings) | `origin`, `counter`, `alg`, `backup_eligible`, `backed_up` |
-| `receipt` | `trust`, `evidence`, `expect` (optional; only `statement`, `aud`, `signer`) | `type`, `statement`, `envelope`, `dimension` (`digest`, `name`, `verifier`, `registry`, `signer`), `accepted` (`kid`, `at`), `anchor` (`log`, `index`), `key_record` (`log`, `index`, `at`, or null), `key` (the receipt's key), and the `proof` answer |
+| `receipt` | `trust`, `evidence`, `expect` (optional; only `statement`, `aud`, `signer`) | `type`, `statement`, `envelope`, `dimension` (`digest`, `name`, `verifier`, `registry`, `signer`), `accepted` (`kid`, `at`), `anchor` (`log`, `index`, `origin`, `leaf_hash`), `key_record` (`log`, `index`, `origin`, `leaf_hash`, `at`, or null), `key` (the receipt's key), and the `proof` answer |
 | `app_receipt` | as `receipt`, and `holder_proof` (optional JSON string) | as `receipt`, without `key_record`, `key` and the `proof` answer |
 | `ledger_note` | `trust`, `note` | `log`, `kid`, `body` (`kind` `receipt` with `origin`, `index`, `leaf_hash`; or `checkpoint` with `origin`, `size`, `root`, `time`) |
 | `inclusion` | `index`, `size`, `leaf_hash`, `proof`, `root` | nothing more |
@@ -61,7 +61,7 @@ FORMATS.md describes the documents.
 | `chain` | `trust`, `events` (skeleton strings in `seq` order), `from` (digest or null), `contents` (optional `{ seq, content }`), `snapshot` (optional string) | `actor`, `first`, `last`, `head`, `opened` (`seq`, `change`, `at`), `snapshot` (its `seq`, or null) |
 | `bundle` | `trust`, `evidence` (a `ledger.bundle@1` string) | `log`, `index`, `committed_by`, `opening`, `anchor` (`anchored_by`, `tsa`, or null) |
 
-`trust` is `{ "master": <JWK object>, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>", …] }`. Hashes in `inclusion`, `consistency` and `ledger_note` are standard Base64 with padding, as in signed notes; a proof has at most 64 hashes.
+`trust` is `{ "master": <JWK object>, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>", …] }`. Hashes in `inclusion`, `consistency`, `ledger_note` and a receipt's `anchor` and `key_record` are standard Base64 with padding, as in signed notes; a proof has at most 64 hashes. A receipt's `anchor` names the leaf with the log note's `origin` and `leaf_hash`, so a host can fetch the log's checkpoint and an inclusion proof and check them with `ledger_note` and `inclusion` without reading the receipt.
 
 ## Hosts
 
