@@ -30,6 +30,18 @@ function jcs(v) {
   return JSON.stringify(v);
 }
 
+/** RFC 8785 for app records, whose numbers may have fractions (ECMAScript number form). */
+function jcsAny(v) {
+  if (Array.isArray(v)) return `[${v.map(jcsAny).join(",")}]`;
+  if (v !== null && typeof v === "object") {
+    return `{${Object.keys(v)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${jcsAny(v[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(v);
+}
+
 const sha256 = (b) => createHash("sha256").update(b).digest();
 const b64u = (b) => Buffer.from(b).toString("base64url");
 const b64 = (b) => Buffer.from(b).toString("base64");
@@ -102,6 +114,9 @@ const ledgerFp0 = ed25519("ledger-first-party-0");
 const ledgerAnchor = ed25519("ledger-anchor");
 const ledgerStray = ed25519("ledger-stray");
 const passkey = p256("passkey");
+const mandateAttest = p256("mandate-attest");
+const stateAttest = ed25519("state-attest");
+const appOperate = ed25519("app-operate");
 
 const SEALER_KID = "clavis-sealer";
 const IAT = 1791747761;
@@ -139,6 +154,8 @@ const KEYS = {
   fp0: jwksKey("ledger-log", ledgerFp0, "EdDSA"),
   anchor: jwksKey("ledger-log", ledgerAnchor, "EdDSA"),
   stray: jwksKey("ledger-log", ledgerStray, "EdDSA"),
+  mandateAttest: jwksKey("mandate-attest", mandateAttest, "ES256"),
+  stateAttest: jwksKey("state-attest", stateAttest, "EdDSA"),
 };
 const jwks = { keys: Object.values(KEYS), sealer: nomination };
 
@@ -147,6 +164,11 @@ const registry = {
   statements: {
     "profile.patch@1": { aud: "account:<signer>", fields: { display_name: "text(200)" } },
     "app.sign@1": { aud: "request:<request>", fields: { request: "id", app: "app", digest: "bytes32" } },
+    "mandate.grant@1": { aud: "request:<request>", fields: { request: "id", app: "app", mandate: "uuid", terms: "digest" } },
+    "mandate.grant.on_behalf@1": {
+      aud: "request:<request>",
+      fields: { request: "id", app: "app", mandate: "uuid", terms: "digest", org: "org", domain: "domain" },
+    },
   },
 };
 const VERIFIER = `sha256:${b64u(sha256("collatio test module"))}`;
@@ -177,6 +199,15 @@ const appDim = {
   receipts: ["app", "holder"],
 };
 
+const mandateDim = {
+  ...accountDim,
+  name: "mandate",
+  statements: ["mandate.grant.on_behalf@1", "mandate.grant@1"],
+  signer: "pairwise",
+  sessions: ["app"],
+  receipts: ["app", "holder"],
+};
+
 function signCatalog(body, by = sealer) {
   return { ...body, signature: { kid: SEALER_KID, alg: "ES256", sig: es256(by, jcs(body)) } };
 }
@@ -188,7 +219,7 @@ const catalogBody = {
   verifiers: [{ digest: VERIFIER, source: { repo: "https://github.com/clavisnexus/collatio", tag: "v1.0.0", commit: "a".repeat(40) } }],
   revoked: [],
   registries: [digestOf(registry)],
-  dimensions: [digestOf(accountDim), digestOf(appDim)],
+  dimensions: [digestOf(accountDim), digestOf(appDim), digestOf(mandateDim)],
   logs: [
     { id: "first-party.0", kid: KEYS.fp0.kid },
     { id: "anchor", kid: KEYS.anchor.kid },
@@ -699,12 +730,352 @@ ok(
     { op: "ledger_note", trust: trust(), note: note(body, ledgerFp0, KEYS.fp0.kid) },
     "ledger_note_signer",
   );
-  no(
-    "ledger_note: origin of an org log",
+  ok(
+    "ledger_note: an org log's checkpoint, signed by a ledger-log key",
     { op: "ledger_note", trust: trust(), note: note(body.replace("/ledger/anchor", `/ledger/eu1.${APP}`), ledgerAnchor, KEYS.anchor.kid) },
+    { log: `eu1.${APP}`, kid: KEYS.anchor.kid },
+  );
+  no(
+    "ledger_note: origin of an unknown log",
+    { op: "ledger_note", trust: trust(), note: note(body.replace("/ledger/anchor", "/ledger/archive"), ledgerAnchor, KEYS.anchor.kid) },
     "ledger_note_log",
   );
+  no(
+    "ledger_note: an org log's note signed by a key of another slot",
+    { op: "ledger_note", trust: trust(), note: note(body.replace("/ledger/anchor", `/ledger/eu1.${APP}`), stateAttest, KEYS.stateAttest.kid) },
+    "ledger_note_signer",
+  );
 }
+
+// ---------------------------------------------------------------- delegation records
+
+const MANDATE_ID = "6f1d2c3b-4a5e-4f60-8172-9a8b7c6d5e4f";
+const REQUEST_M = `eu1.${b64u(bytes("mandate request", 18))}`;
+const terms = {
+  type: "mandate.terms@1",
+  operations: [
+    { name: "book", label: "Book a room" },
+    { name: "cancel", label: "Cancel a booking" },
+  ],
+  uses: 3,
+  not_after: IAT + 86400,
+  amount: { currency: "JPY", total: 30000, per_use: 15000 },
+  agent: { id: "agent-1", label: "Travel agent" },
+};
+
+/** An app receipt for a grant statement, with its anchor on first-party.0. */
+function grantReceipt(statement, index) {
+  const envelope = envelopeFor(statement, mandateDim, PAIRWISE, `request:${statement.request}`);
+  const proof = prove(envelope, { counter: 20 + index });
+  const core = { type: "receipt.app@1", statement, envelope, proof: digestOf(proof), dimension: mandateDim };
+  return { envelope, receipt: { ...core, attestations: [accepted(core), ledgerReceipt(anchorC(envelope, digestOf(proof)), index)] } };
+}
+const grantStatement = { type: "mandate.grant@1", request: REQUEST_M, app: APP, mandate: MANDATE_ID, terms: digestOf(terms) };
+const grant = grantReceipt(grantStatement, 50);
+const GRANT = digestOf(grant.envelope);
+
+const OPERATE_KEY = { kty: "OKP", crv: "Ed25519", x: appOperate.x };
+function appJwt(request, at, over = {}) {
+  const header = b64u(Buffer.from(JSON.stringify({ alg: "EdDSA", typ: "JWT" })));
+  const payloadText =
+    over.payloadText ??
+    JSON.stringify({
+      iss: `app:${APP}`,
+      app_id: APP,
+      aud: "clavis-ledger",
+      body_sha256: hex(sha256(jcs(request))),
+      iat: at - 5,
+      exp: at + 60,
+      ...over.payload,
+    });
+  const payload = b64u(Buffer.from(payloadText));
+  const sig = sign(null, Buffer.from(`${header}.${payload}`), (over.key ?? appOperate).priv);
+  return `${header}.${payload}.${b64u(sig)}`;
+}
+const recordDigest = (r) => {
+  const { sigs: _sigs, ...body } = r;
+  return digestOf(body);
+};
+function attestRecord(body, { key = mandateAttest, kid = KEYS.mandateAttest.kid } = {}) {
+  return { ...body, sigs: [{ kid, alg: "ES256", sig: es256(key, jcs(body)) }] };
+}
+function useRecord(seq, prev, { amount = 10000, at = IAT + 100 * seq, request: over = {}, jwt = {}, totals, sign: signOver } = {}) {
+  const request = {
+    type: "mandate.use_request@1",
+    mandate: MANDATE_ID,
+    use: `0000000${seq}-0000-4000-8000-000000000000`,
+    operation: "book",
+    call: digestOf(`call ${seq}`),
+    amount,
+    agent: "agent-1",
+    ...over,
+  };
+  const spent = (prev?.totals.amount ?? 0) + (request.amount ?? 0);
+  return attestRecord(
+    {
+      type: "mandate.use@1",
+      grant: GRANT,
+      seq,
+      prev: prev ? recordDigest(prev) : null,
+      request,
+      app: { jwt: appJwt(jwt.request ?? request, at, jwt), key: OPERATE_KEY },
+      totals: totals ?? { uses: seq, amount: spent },
+      at,
+    },
+    signOver,
+  );
+}
+const use1 = useRecord(1, null);
+const use2 = useRecord(2, use1);
+function closeRecord(over = {}, signOver) {
+  return attestRecord(
+    { type: "mandate.close@1", grant: GRANT, mandate: MANDATE_ID, reason: "revoked_by_holder", uses: 2, last: recordDigest(use2), at: IAT + 500, ...over },
+    signOver,
+  );
+}
+const close = closeRecord();
+const historyCall = (over = {}) => ({
+  op: "mandate_history",
+  trust: trust(over.trust),
+  grant: JSON.stringify(over.grant ?? grant.receipt),
+  terms: JSON.stringify(over.terms ?? terms),
+  uses: (over.uses ?? [use1, use2]).map((u) => JSON.stringify(u)),
+  ...(over.close === null ? {} : { close: JSON.stringify(over.close ?? close) }),
+});
+
+ok("mandate_history", historyCall(), {
+  grant: { type: "mandate.grant@1", mandate: MANDATE_ID, app: APP, request: REQUEST_M, on_behalf: null },
+  terms,
+  uses: [
+    { seq: 1, operation: "book", at: IAT + 100, totals: { uses: 1, amount: 10000 } },
+    { seq: 2, operation: "book", at: IAT + 200, totals: { uses: 2, amount: 20000 } },
+  ],
+  close: { reason: "revoked_by_holder", at: IAT + 500, uses: 2 },
+});
+ok("mandate_history: open, no uses", historyCall({ uses: [], close: null }), { uses: [], close: null });
+ok("mandate_history: one use, still open", historyCall({ uses: [use1], close: null }), { close: null });
+{
+  const statement = { ...grantStatement, type: "mandate.grant.on_behalf@1", org: `eu1.${APP}`, domain: "acme.example" };
+  const g = grantReceipt(statement, 51);
+  const c = attestRecord({
+    type: "mandate.close@1",
+    grant: digestOf(g.envelope),
+    mandate: MANDATE_ID,
+    reason: "signer_designation_ended",
+    uses: 0,
+    last: null,
+    at: IAT + 500,
+  });
+  ok("mandate_history: in an organization's name, closed when the designation ended", historyCall({ grant: g.receipt, uses: [], close: c }), {
+    grant: { type: "mandate.grant.on_behalf@1", mandate: MANDATE_ID, app: APP, request: REQUEST_M, on_behalf: { org: `eu1.${APP}`, domain: "acme.example" } },
+    close: { reason: "signer_designation_ended", at: IAT + 500, uses: 0 },
+  });
+}
+no("mandate_history: grant is not a grant", historyCall({ grant: appReceipt }), "mandate_grant");
+no("mandate_history: grant receipt tampered", historyCall({ grant: { ...grant.receipt, statement: { ...grantStatement, mandate: "00000000-0000-4000-8000-000000000000" } } }), "statement_digest");
+no("mandate_history: other terms", historyCall({ terms: { ...terms, uses: 4 } }), "mandate_terms_digest");
+no(
+  "mandate_history: terms out of order",
+  historyCall({ terms: { ...terms, operations: [...terms.operations].reverse() } }),
+  "mandate_terms_shape",
+);
+no(
+  "mandate_history: use signed by the receipt key",
+  historyCall({ uses: [useRecord(1, null, { sign: { key: signReceipt, kid: KEYS.signReceipt.kid } })], close: null }),
+  "mandate_attest_signature",
+);
+no("mandate_history: jwt by another key", historyCall({ uses: [useRecord(1, null, { jwt: { key: ledgerStray } })], close: null }), "mandate_app_jwt_signature");
+no("mandate_history: jwt for another audience", historyCall({ uses: [useRecord(1, null, { jwt: { payload: { aud: "other" } } })], close: null }), "mandate_app_jwt_aud");
+no("mandate_history: jwt for another app", historyCall({ uses: [useRecord(1, null, { jwt: { payload: { app_id: "other-app" } } })], close: null }), "mandate_app_jwt_app");
+no(
+  "mandate_history: jwt over another request",
+  historyCall({ uses: [useRecord(1, null, { jwt: { request: { type: "mandate.use_request@1", other: 1 } } })], close: null }),
+  "mandate_app_jwt_body",
+);
+no("mandate_history: jwt expired", historyCall({ uses: [useRecord(1, null, { jwt: { payload: { exp: IAT } } })], close: null }), "mandate_app_jwt_time");
+no("mandate_history: jwt time with a fraction", historyCall({ uses: [useRecord(1, null, { jwt: { payload: { iat: IAT + 95.5 } } })], close: null }), "mandate_app_jwt_time");
+{
+  const at = IAT + 100;
+  const body = JSON.stringify({ iss: `app:${APP}`, app_id: APP, aud: "clavis-ledger", body_sha256: "x", iat: at, exp: at + 60 });
+  const dup = body.replace("{", '{"aud":"other",');
+  no("mandate_history: jwt with a repeated key", historyCall({ uses: [useRecord(1, null, { jwt: { payloadText: dup } })], close: null }), "mandate_app_jwt_shape");
+}
+no("mandate_history: over the per-use amount", historyCall({ uses: [useRecord(1, null, { amount: 20000 })], close: null }), "mandate_outside");
+no("mandate_history: another operation", historyCall({ uses: [useRecord(1, null, { request: { operation: "pay" } })], close: null }), "mandate_outside");
+no("mandate_history: totals that do not add up", historyCall({ uses: [useRecord(1, null, { totals: { uses: 1, amount: 15000 } })], close: null }), "mandate_totals");
+no("mandate_history: another mandate", historyCall({ uses: [useRecord(1, null, { request: { mandate: "00000000-0000-4000-8000-000000000000" } })], close: null }), "mandate_mismatch");
+no("mandate_history: before the grant", historyCall({ uses: [useRecord(1, null, { at: IAT - 10 })], close: null }), "mandate_before_grant");
+no("mandate_history: uses out of order", historyCall({ uses: [use2, use1], close: null }), "mandate_use_chain");
+{
+  const other = useRecord(2, useRecord(1, null, { amount: 5000 }));
+  no("mandate_history: second use after another first", historyCall({ uses: [use1, other], close: null }), "mandate_use_chain");
+}
+no("mandate_history: use with an old member", historyCall({ uses: [{ ...use1, extra: 1 }], close: null }), "mandate_use_shape");
+no("mandate_history: signer_designation_ended without an organization", historyCall({ close: closeRecord({ reason: "signer_designation_ended" }) }), "mandate_close_reason");
+no("mandate_history: exhausted too early", historyCall({ close: closeRecord({ reason: "exhausted" }) }), "mandate_close_exhausted");
+no("mandate_history: expired at another time", historyCall({ close: closeRecord({ reason: "expired" }) }), "mandate_close_expired");
+no("mandate_history: close before the last use", historyCall({ close: closeRecord({ uses: 1, last: recordDigest(use1) }) }), "mandate_close_last");
+no("mandate_history: close for another grant", historyCall({ close: closeRecord({ grant: digestOf("other") }) }), "mandate_grant_digest");
+no("mandate_history: close signed by another key", historyCall({ close: closeRecord({}, { key: otherMaster }) }), "mandate_attest_signature");
+no("mandate_history: close@2 is gone", historyCall({ close: closeRecord({ type: "mandate.close@2" }) }), "mandate_close_shape");
+
+// ---------------------------------------------------------------- event chains
+
+function content(seq, over = {}) {
+  return {
+    salt: b64u(bytes(`event salt ${seq}`)),
+    change: "profile.patch@1",
+    at: IAT + seq,
+    payload: { display_name: `Name ${seq}` },
+    receipt: seq === 2 ? JSON.stringify(holder) : null,
+    ...over,
+  };
+}
+function commitOf(c) {
+  const { salt, ...rest } = c;
+  return `sha256:${b64u(sha256(Buffer.concat([Buffer.from("clavis.event.v1"), Buffer.from(salt, "base64url"), Buffer.from(jcs({ type: "event.content@1", ...rest }))])))}`;
+}
+function attestDoc(body, { key = stateAttest, kid = KEYS.stateAttest.kid, alg = "EdDSA" } = {}) {
+  return { ...body, attest: { kid, alg, sig: b64u(sign(null, Buffer.from(jcs(body)), key.priv)) } };
+}
+const skeletonDigest = (s) => {
+  const { attest: _a, ...body } = s;
+  return digestOf(body);
+};
+function skeleton(seq, prev, over = {}, signOver) {
+  return attestDoc(
+    {
+      type: "event@1",
+      actor: SIGNER,
+      seq,
+      prev: prev ? skeletonDigest(prev) : null,
+      commit: commitOf(content(seq)),
+      envelope: seq === 2 ? digestOf(accountEnvelope) : null,
+      leaves: seq === 2 ? [accountAnchor] : [],
+      ...over,
+    },
+    signOver,
+  );
+}
+const ev1 = skeleton(1, null);
+const ev2 = skeleton(2, ev1);
+const ev3 = skeleton(3, ev2);
+const snapshot = attestDoc({ type: "state.snapshot@1", actor: SIGNER, seq: 2, head: skeletonDigest(ev2), state: { display_name: "Name 2" } });
+const chainCall = (over = {}) => ({
+  op: "chain",
+  trust: trust(),
+  events: (over.events ?? [ev1, ev2, ev3]).map((e) => JSON.stringify(e)),
+  from: over.from ?? null,
+  ...(over.contents === null ? {} : { contents: (over.contents ?? [[1, content(1)], [2, content(2)]]).map(([seq, c]) => ({ seq, content: JSON.stringify(c) })) }),
+  ...(over.snapshot === null ? {} : { snapshot: JSON.stringify(over.snapshot ?? snapshot) }),
+});
+
+ok("chain", chainCall(), {
+  actor: SIGNER,
+  first: 1,
+  last: 3,
+  head: skeletonDigest(ev3),
+  opened: [
+    { seq: 1, change: "profile.patch@1", at: IAT + 1 },
+    { seq: 2, change: "profile.patch@1", at: IAT + 2 },
+  ],
+  snapshot: 2,
+});
+ok("chain: from the middle", chainCall({ events: [ev2, ev3], from: skeletonDigest(ev1), contents: null, snapshot: null }), { first: 2, last: 3, opened: [], snapshot: null });
+no("chain: from another skeleton", chainCall({ events: [ev2, ev3], from: skeletonDigest(ev3), contents: null, snapshot: null }), "chain_link");
+no("chain: a skeleton missing", chainCall({ events: [ev1, ev3], contents: null, snapshot: null }), "chain_link");
+no("chain: signed by a ledger key", chainCall({ events: [ev1, skeleton(2, ev1, {}, { key: ledgerFp0, kid: KEYS.fp0.kid })], contents: null, snapshot: null }), "chain_attest");
+no("chain: alg written as Ed25519", chainCall({ events: [skeleton(1, null, {}, { alg: "Ed25519" })], contents: null, snapshot: null }), "chain_attest");
+no(
+  "chain: another actor",
+  chainCall({ events: [ev1, skeleton(2, ev1, { actor: `eu1.${APP}` })], contents: null, snapshot: null }),
+  "chain_actor",
+);
+no("chain: first with a prev", chainCall({ events: [skeleton(1, ev3)], contents: null, snapshot: null }), "chain_shape");
+no("chain: leaf twice", chainCall({ events: [skeleton(1, null, { leaves: [accountAnchor, accountAnchor] })], contents: null, snapshot: null }), "chain_shape");
+no("chain: content changed", chainCall({ contents: [[1, content(1, { payload: { display_name: "Other" } })]] }), "chain_content_commit");
+no("chain: content for no skeleton", chainCall({ contents: [[9, content(1)]] }), "chain_content_seq");
+no("chain: content with an extra member", chainCall({ contents: [[1, { ...content(1), extra: 1 }]] }), "chain_content_shape");
+no("chain: snapshot at another head", chainCall({ snapshot: { ...snapshot, head: skeletonDigest(ev3) } }), "chain_snapshot_head");
+no(
+  "chain: snapshot signed by another key",
+  chainCall({ snapshot: attestDoc({ type: "state.snapshot@1", actor: SIGNER, seq: 2, head: skeletonDigest(ev2), state: {} }, { key: ledgerStray }) }),
+  "chain_attest",
+);
+
+// ---------------------------------------------------------------- ledger evidence bundles
+
+const ORG_LOG = `eu1.${APP}`;
+const nodeHash = (l, r) => sha256(Buffer.concat([Buffer.from([1]), l, r]));
+function mth(hashes) {
+  if (hashes.length === 1) return hashes[0];
+  let k = 1;
+  while (k * 2 < hashes.length) k *= 2;
+  return nodeHash(mth(hashes.slice(0, k)), mth(hashes.slice(k)));
+}
+function path(m, hashes) {
+  if (hashes.length === 1) return [];
+  let k = 1;
+  while (k * 2 < hashes.length) k *= 2;
+  return m < k ? [...path(m, hashes.slice(0, k)), mth(hashes.slice(k))] : [...path(m - k, hashes.slice(k)), mth(hashes.slice(0, k))];
+}
+const record = { invoice: "INV-1", amount: 12.5, lines: [1, 2.25, -0] };
+const recordSalt = bytes("record salt");
+const recordC = hex(sha256(Buffer.concat([Buffer.from("clavis.commit.v1"), recordSalt, Buffer.from(jcsAny(record))])));
+const otherLeaves = [0, 1, 3, 4].map((i) => leafHash(hex(bytes(`other leaf ${i}`))));
+const leafHashes = [otherLeaves[0], otherLeaves[1], leafHash(recordC), otherLeaves[2], otherLeaves[3]];
+function bundleFor(log, { key = ledgerFp0, kid = KEYS.fp0.kid, host = HOST, anchorHost = HOST } = {}) {
+  const cpBody = `${host}/ledger/${log}\n5\n${b64(mth(leafHashes))}\ntime ${IAT + 60}\n`;
+  const receiptBody = `clavis.ledger.receipt/v1\n${host}/ledger/${log}\n2\n${b64(leafHashes[2])}\n`;
+  const anchorLeaves = [leafHash(hex(bytes("anchor 0"))), leafHash(hex(sha256(cpBody))), leafHash(hex(bytes("anchor 2")))];
+  const anchorBody = `${anchorHost}/ledger/anchor\n3\n${b64(mth(anchorLeaves))}\ntime ${IAT + 120}\n`;
+  return {
+    type: "ledger.bundle@1",
+    log,
+    leaf: { v: 1, c: recordC },
+    index: 2,
+    receipt: note(receiptBody, key, kid),
+    checkpoint: note(cpBody, key, kid),
+    inclusion: path(2, leafHashes).map(b64),
+    opening: { salt: b64u(recordSalt), record },
+    anchor: {
+      index: 1,
+      checkpoint: note(anchorBody, ledgerAnchor, KEYS.anchor.kid),
+      inclusion: path(1, anchorLeaves).map(b64),
+      tsa: [{ url: "https://tsa.example/", response: b64(Buffer.from("not a token")) }],
+    },
+  };
+}
+const orgBundle = bundleFor(ORG_LOG);
+const bundleCall = (evidence) => ({ op: "bundle", trust: trust(), evidence: typeof evidence === "string" ? evidence : JSON.stringify(evidence) });
+
+ok("bundle: an org log, with opening and anchor", bundleCall(orgBundle), {
+  log: ORG_LOG,
+  index: 2,
+  committed_by: IAT + 60,
+  opening: true,
+  anchor: { anchored_by: IAT + 120, tsa: 0 },
+});
+{
+  const { opening: _o, anchor: _a, ...bare } = orgBundle;
+  ok("bundle: leaf only", bundleCall(bare), { opening: false, anchor: null });
+}
+ok("bundle: a first-party shard", bundleCall(bundleFor("first-party.0")), { log: "first-party.0", opening: true });
+no("bundle: a first-party shard signed by an unlisted key", bundleCall(bundleFor("first-party.0", { key: ledgerStray, kid: KEYS.stray.kid })), "ledger_note_signer");
+no("bundle: another salt", bundleCall({ ...orgBundle, opening: { salt: b64u(bytes("other")), record } }), "bundle_opening");
+no("bundle: record changed", bundleCall({ ...orgBundle, opening: { salt: b64u(recordSalt), record: { ...record, amount: 12.25 } } }), "bundle_opening");
+no("bundle: inclusion proof swapped", bundleCall({ ...orgBundle, inclusion: [...orgBundle.inclusion].reverse() }), "bundle_inclusion");
+no("bundle: another index", bundleCall({ ...orgBundle, index: 3 }), "bundle_receipt");
+no("bundle: notes of another log", bundleCall({ ...orgBundle, log: `eu1.${MANDATE_ID}` }), "bundle_log");
+no("bundle: anchor on another host", bundleCall(bundleFor(ORG_LOG, { anchorHost: "other.example" })), "bundle_anchor");
+no("bundle: anchor inclusion wrong", bundleCall({ ...orgBundle, anchor: { ...orgBundle.anchor, index: 0 } }), "bundle_anchor");
+no("bundle: the v1 shape", bundleCall({ version: 1, log_id: ORG_LOG, jwks: jwks, leaf: orgBundle.leaf }), "bundle_shape");
+no("bundle: anchor of the wrong log", bundleCall({ ...orgBundle, anchor: { ...orgBundle.anchor, checkpoint: orgBundle.checkpoint } }), "bundle_anchor");
+no(
+  "bundle: record with a repeated key",
+  bundleCall(JSON.stringify(orgBundle).replace('"invoice":"INV-1"', '"invoice":"INV-1","invoice":"INV-2"')),
+  "json_duplicate_key",
+);
 
 const out = join(root, "vectors", "genesis", "ops-1.json");
 mkdirSync(dirname(out), { recursive: true });

@@ -17,6 +17,8 @@
 extern crate alloc;
 
 pub mod b64;
+pub mod bundle;
+pub mod chain;
 pub mod challenge;
 pub mod commit;
 pub mod cose;
@@ -30,6 +32,7 @@ pub mod json;
 pub mod keylog;
 pub mod ledger;
 pub mod logs;
+pub mod mandate;
 pub mod reason;
 pub mod receipt;
 pub mod registry;

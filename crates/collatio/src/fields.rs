@@ -191,6 +191,11 @@ pub fn is_org(s: &str) -> bool {
         .is_some_and(|(cell, id)| is_cell(cell) && is_uuid(id))
 }
 
+/// An App ID: a lowercase UUID or a slug.
+pub fn is_app(s: &str) -> bool {
+    is_uuid(s) || is_app_slug(s)
+}
+
 fn is_app_slug(s: &str) -> bool {
     let b = s.as_bytes();
     !b.is_empty()
@@ -258,7 +263,7 @@ impl Kind {
         match self {
             Kind::Id | Kind::Subject => is_id(s, 200),
             Kind::Uuid => is_uuid(s),
-            Kind::App => is_uuid(s) || is_app_slug(s),
+            Kind::App => is_app(s),
             Kind::Credential => s.len() <= 1366 && is_b64u_text(s),
             Kind::Digest => is_digest(s),
             Kind::Bytes32 => s.len() == 43 && b64::decode_len(s, 32).is_some(),

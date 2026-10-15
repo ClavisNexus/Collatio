@@ -505,16 +505,27 @@ impl Trust {
             .map(|k| &k.key)
     }
 
-    /// The Ed25519 keys the catalog lists for a log, with their kids.
-    pub fn log_keys<'a>(&'a self, log: &'a str) -> impl Iterator<Item = (&'a str, &'a [u8; 32])> {
+    /// The Ed25519 keys that may sign a log's notes, with their kids: the ones the catalog lists
+    /// for a first-party shard or `anchor`, and any `ledger-log` key for an Org's log, which the
+    /// catalog does not list.
+    pub fn log_keys<'a>(&'a self, log: &'a str) -> Vec<(&'a str, &'a [u8; 32])> {
+        let ledger_key = |kid: &'a str| match self.key(kid, SLOT_LEDGER_LOG) {
+            Some(PublicKey::Ed25519(x)) => Some((kid, x)),
+            _ => None,
+        };
+        if crate::fields::is_org(log) {
+            return self
+                .keys
+                .iter()
+                .filter_map(|k| ledger_key(k.kid.as_str()))
+                .collect();
+        }
         self.catalog
             .logs
             .iter()
-            .filter(move |(id, _)| id == log)
-            .filter_map(move |(_, kid)| match self.key(kid, SLOT_LEDGER_LOG) {
-                Some(PublicKey::Ed25519(x)) => Some((kid.as_str(), x)),
-                _ => None,
-            })
+            .filter(|(id, _)| id == log)
+            .filter_map(|(_, kid)| ledger_key(kid.as_str()))
+            .collect()
     }
 
     /// The registry document whose digest is `digest`, read strictly.

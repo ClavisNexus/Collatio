@@ -168,4 +168,52 @@ As in the design (§10.1), signed by the sealer:
 
 ABI.md lists the operations, what each reads and answers, and the reasons. As in the design (§18.3), the caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
 
-Not in this draft: delegation records (`mandate.*@1`), event chains (`event@1`, `event.content@1`, `state.snapshot@1`, `state.head@1`, `state.heads@1`), and the genesis form of the ledger evidence bundle.
+## 7. Delegation records
+
+The records keep their pre-genesis shapes (`mandate.terms@1`, `mandate.use_request@1`, `mandate.use@1`) and rules (the scope check, totals, the chain of uses). What changes:
+
+- `mandate.close@1` takes the reasons `account_closed`, `exhausted`, `expired`, `revoked_by_app`, `revoked_by_holder` and `signer_designation_ended`. The last is allowed only when the grant is `mandate.grant.on_behalf@1`. `mandate.close@2` is gone (genesis.md §5.5).
+- The grant is a receipt (holder or app) whose statement is a grant type. Grant types are rules of the module:
+
+| Grant | Reads | |
+|---|---|---|
+| `mandate.grant@1` | `request`, `app`, `mandate` (UUID), `terms` (digest) | |
+| `mandate.grant.on_behalf@1` | the same, and `org` (Org ID), `domain` | in the name of an organization |
+
+- Clavis's signature stays in `sigs` (1–4 of `{ kid, alg, sig }`): ES256 raw r‖s over UTF-8(JCS(record without `sigs`)), by a JWKS key in slot `mandate-attest`. A signature with another `alg` is not read; at least one ES256 one must verify. A record's digest is `digestOf(record without sigs)`.
+- The app's JWT (`app.jwt`, compact JWS) is checked as before: `EdDSA` with an OKP key or `ES256` with an EC key; `iss` = `app:<app>`, `app_id` = `<app>`, `aud` = `clavis-ledger`, `body_sha256` = hex(SHA-256(UTF-8(JCS(request)))), and `iat` − 30 ≤ `at` ≤ `exp` + 30. **Open:** the header and payload are read by the strict reader (a repeated key is refused) and `iat`, `exp` must be integers; the pre-genesis reader took any JSON number and let a repeated key win.
+- The first use's totals must start from nothing. The pre-genesis check compared totals only with the use before, so a first use could claim an amount already spent; Collatio refuses it (`mandate_totals`).
+- The `mandate_history` operation reads `trust`, `grant` (the receipt string), `terms` (string), `uses` (strings in `seq` order) and `close` (string, optional). It checks the grant receipt fully (§4), then the terms against the grant's `terms`, then each use against the one before, then the close against the last use.
+
+## 8. Event chains
+
+Account and Org state are chains of skeletons (genesis.md §19.2). A skeleton links and commits; the content is kept apart and may be deleted.
+
+```jsonc
+{ "type": "event@1", "actor": "eu1.Q2xh…", "seq": 42, "prev": "sha256:…", "commit": "sha256:…",
+  "envelope": "sha256:…", "leaves": ["<c>"], "attest": { "kid": "clavis-state-attest-9hd4", "alg": "EdDSA", "sig": "…" } }
+```
+
+- `actor`: an account ID (`<cell>.<43 Base64URL characters>`) or an Org ID (`<cell>.<UUID>`). `seq` ≥ 1; `prev` is null exactly when `seq` is 1. `envelope` is the envelope digest when a receipt caused the change, else null. `leaves`: 0–16 leaf `c` values, without duplicates.
+- `attest`: Ed25519 over UTF-8(JCS(skeleton without `attest`)) by a JWKS key in slot `state-attest`. The skeleton's digest is `digestOf(skeleton without attest)`; the next skeleton's `prev` is that digest. **Open:** `alg` is `EdDSA` (the JOSE name, as the JWKS key says); the design sketch wrote `Ed25519`.
+- Content (`event.content@1`), kept by the writer as `{ salt, change, at, payload, receipt }`: `salt` 32 bytes Base64URL; `change` a type ID; `at` Unix seconds; `payload` an object; `receipt` the holder receipt string when the signer's receipt caused the change, else null. `commit` = `sha256:` + Base64URL(SHA-256(UTF-8(`clavis.event.v1`) ‖ salt ‖ UTF-8(JCS({ type: "event.content@1", change, at, payload, receipt })))).
+- Snapshot (`state.snapshot@1`): `{ type, actor, seq, head, state, attest }`: the state after event `seq`, whose skeleton digest is `head`, signed like a skeleton.
+- Head leaf (`state.head@1`): c = hex(SHA-256(UTF-8(`clavis.commit.v1`) ‖ salt ‖ UTF-8(JCS({ type: "state.head@1", seq, head })))). **Open:** the aggregated head (`state.heads@1`) waits until aggregation is built (§19.4 says it comes when leaves grow).
+- The `chain` operation reads `trust`, `events` (skeleton strings in `seq` order), `from` (the digest before the first skeleton, or null when it starts at 1), `contents` (optional `{ seq, content }` with content strings) and `snapshot` (optional string). It checks every signature and link, opens the contents given, and checks the snapshot against the skeleton at its `seq`.
+
+## 9. Ledger evidence bundle (`ledger.bundle@1`)
+
+The pre-genesis bundle v1 without its JWKS copy, since trust comes from `trust`:
+
+```jsonc
+{ "type": "ledger.bundle@1", "log": "<log ID>", "leaf": { "v": 1, "c": "…" }, "index": 7,
+  "receipt": "<note>", "checkpoint": "<note>", "inclusion": ["<base64>", …],
+  "opening": { "salt": "…", "record": { … } },                                        // optional
+  "anchor": { "index": 3, "checkpoint": "<note>", "inclusion": [ … ], "tsa": [ { "response": "<base64 DER>" } ] } }   // optional
+```
+
+- `log`: a first-party shard or an Org ID (the Org's log). Notes of first-party shards and `anchor` verify with the keys the catalog lists; **Open:** notes of an Org's log verify with any JWKS key in slot `ledger-log`, as now, because the catalog does not list Org logs.
+- The receipt and the checkpoint have the origin `<host>/ledger/<log>`; the receipt's index and leaf hash are the bundle's; the inclusion proof leads from the leaf to the checkpoint root.
+- `opening`: the commitment of `{ salt, record }` (`clavis.commit.v1`) is the leaf's `c`. The record is the app's JSON (RFC 8785 numbers; repeated keys refused).
+- `anchor`: the anchor leaf `{ v: 1, c: hex(SHA-256(UTF-8(checkpoint body))) }` is in the anchor checkpoint (origin `<same host>/ledger/anchor`), and each TSA token stamps the anchor checkpoint body. A token counts when it verifies against the TSA registry at its genTime; tokens that do not verify are not counted (as now).
+- The `bundle` operation answers `committed_by` (the checkpoint time), `opening` (true when given and matching) and `anchor` (`anchored_by`, `tsa` count) or null.

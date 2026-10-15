@@ -57,10 +57,11 @@ FORMATS.md describes the documents.
 | `ledger_note` | `trust`, `note` | `log`, `kid`, `body` (`kind` `receipt` with `origin`, `index`, `leaf_hash`; or `checkpoint` with `origin`, `size`, `root`, `time`) |
 | `inclusion` | `index`, `size`, `leaf_hash`, `proof`, `root` | nothing more |
 | `consistency` | `first`, `second`, `first_root`, `second_root`, `proof` | nothing more |
+| `mandate_history` | `trust`, `grant` (a receipt string, holder or app), `terms`, `uses` (strings in `seq` order), `close` (string, optional) | `grant` (`type`, `mandate`, `app`, `request`, `on_behalf` or null), `terms`, `uses` (`seq`, `operation`, `at`, `totals`), `close` (`reason`, `at`, `uses`, or null) |
+| `chain` | `trust`, `events` (skeleton strings in `seq` order), `from` (digest or null), `contents` (optional `{ seq, content }`), `snapshot` (optional string) | `actor`, `first`, `last`, `head`, `opened` (`seq`, `change`, `at`), `snapshot` (its `seq`, or null) |
+| `bundle` | `trust`, `evidence` (a `ledger.bundle@1` string) | `log`, `index`, `committed_by`, `opening`, `anchor` (`anchored_by`, `tsa`, or null) |
 
 `trust` is `{ "master": <JWK object>, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>", …] }`. Hashes in `inclusion`, `consistency` and `ledger_note` are standard Base64 with padding, as in signed notes; a proof has at most 64 hashes.
-
-`mandate_history`, `chain` and `bundle` come with the delegation records, the event chains and the genesis ledger evidence bundle.
 
 ## Reasons
 
@@ -141,3 +142,42 @@ Reasons are only added, never renamed or reused.
 | `ledger_note_signature` | The note's signature does not verify. |
 | `inclusion_proof` | The inclusion proof does not lead to the root. |
 | `consistency_proof` | The consistency proof does not connect the roots. |
+| `mandate_grant` | The grant receipt's statement is not a grant type the module reads. |
+| `mandate_terms_shape` | The terms do not have their shape. |
+| `mandate_terms_digest` | The grant names other terms. |
+| `mandate_use_shape` | A use record does not have its shape. |
+| `mandate_grant_digest` | A record names another grant. |
+| `mandate_mismatch` | A record names another mandate. |
+| `mandate_attest_signature` | No ES256 signature by a `mandate-attest` key verifies on a record. |
+| `mandate_app_jwt_shape` | The app's JWT does not read. |
+| `mandate_app_jwt_alg` | The JWT's `alg` does not match the app's key. |
+| `mandate_app_jwt_signature` | The JWT's signature does not verify. |
+| `mandate_app_jwt_app` | The JWT's `iss` or `app_id` is not the grant's app. |
+| `mandate_app_jwt_aud` | The JWT's `aud` is not `clavis-ledger`. |
+| `mandate_app_jwt_body` | The JWT's `body_sha256` is not the request's. |
+| `mandate_app_jwt_time` | The JWT's `iat` and `exp` do not cover the use. |
+| `mandate_before_grant` | A record is dated before the grant. |
+| `mandate_totals` | A use's totals are not the ones the scope check gives. |
+| `mandate_outside` | A use is outside the terms. |
+| `mandate_use_chain` | A use does not follow the one before it. |
+| `mandate_close_shape` | The close does not have its shape. |
+| `mandate_close_reason` | `signer_designation_ended` closes a mandate not given in an organization's name. |
+| `mandate_close_uses` | The close counts other uses than the records. |
+| `mandate_close_expired` | An `expired` close is not dated at `not_after`. |
+| `mandate_close_last` | The close does not name the last use. |
+| `mandate_close_exhausted` | An `exhausted` close comes before the terms are used up. |
+| `chain_shape` | A skeleton does not have its shape. |
+| `chain_attest` | A skeleton or the snapshot is not signed by a `state-attest` key. |
+| `chain_actor` | The skeletons belong to different actors. |
+| `chain_link` | A skeleton does not follow the one before it (or `from`). |
+| `chain_content_seq` | A content names a `seq` outside the skeletons given. |
+| `chain_content_shape` | A content does not have its shape. |
+| `chain_content_commit` | A content does not open its skeleton's `commit`. |
+| `chain_snapshot_shape` | The snapshot does not have its shape or names another actor. |
+| `chain_snapshot_head` | The snapshot's `head` is not the skeleton at its `seq`. |
+| `bundle_shape` | The bundle does not have its shape. |
+| `bundle_log` | The notes are from another log than the bundle's. |
+| `bundle_receipt` | The ledger receipt is for another index or leaf. |
+| `bundle_inclusion` | The inclusion proof does not lead to the checkpoint root. |
+| `bundle_opening` | The opening does not give the leaf's commitment. |
+| `bundle_anchor` | The anchor checkpoint is not the same host's `anchor` or does not include the checkpoint. |

@@ -8,11 +8,15 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use crate::bundle::verify_bundle;
+use crate::chain::verify_chain;
+use crate::digest::digest_of;
 use crate::envelope::parse_envelope;
 use crate::jcs::canonical;
 use crate::json::{self, Number, Object, Value};
 use crate::ledger::merkle::{verify_consistency, verify_inclusion};
 use crate::logs::{Body, verify_log_note};
+use crate::mandate::{GrantContext, parse_terms, read_grant, verify_close, verify_use};
 use crate::reason::Reason;
 use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_APP_1, verify_receipt};
 use crate::trust::{PublicKey, document, read_trust};
@@ -57,6 +61,9 @@ fn dispatch(op: &str, outer: &Value) -> Result<Object, Reason> {
         "ledger_note" => op_ledger_note(outer),
         "inclusion" => op_inclusion(outer),
         "consistency" => op_consistency(outer),
+        "mandate_history" => op_mandate_history(outer),
+        "chain" => op_chain(outer),
+        "bundle" => op_bundle(outer),
         _ => Err(Reason::UnknownOp),
     }
 }
@@ -299,6 +306,166 @@ fn op_inclusion(outer: &Value) -> Result<Object, Reason> {
         return Err(Reason::InclusionProof);
     }
     Ok(Object::default())
+}
+
+fn strings_of(v: Option<&Value>) -> Result<Vec<Value>, Reason> {
+    v.and_then(Value::as_array)
+        .ok_or(Reason::InputMalformed)?
+        .iter()
+        .map(|s| document(Some(s)))
+        .collect()
+}
+
+fn op_mandate_history(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let grant_doc = document(outer.get("grant"))?;
+    let kind = match grant_doc.get("type").and_then(Value::as_str) {
+        Some(RECEIPT_1) => Kind::Holder,
+        Some(RECEIPT_APP_1) => Kind::App,
+        _ => return Err(Reason::ReceiptType),
+    };
+    let receipt = verify_receipt(&trust, &grant_doc, kind, None, &Expect::default())?;
+    let grant = read_grant(&receipt.statement).ok_or(Reason::MandateGrant)?;
+    let terms_doc = document(outer.get("terms"))?;
+    let terms = parse_terms(&terms_doc).ok_or(Reason::MandateTermsShape)?;
+    if digest_of(&terms_doc) != grant.terms {
+        return Err(Reason::MandateTermsDigest);
+    }
+    let digest = digest_of(&receipt.envelope);
+    let iat = receipt
+        .envelope
+        .get("iat")
+        .and_then(Value::as_number)
+        .and_then(Number::as_safe_integer)
+        .ok_or(Reason::EnvelopeShape)?;
+    let g = GrantContext {
+        grant: &grant,
+        terms: &terms,
+        digest: &digest,
+        iat,
+    };
+    let mut uses = Vec::new();
+    for doc in strings_of(outer.get("uses"))? {
+        let u = verify_use(&trust, &g, &doc, uses.last())?;
+        uses.push(u);
+    }
+    let close = match outer.get("close") {
+        None | Some(Value::Null) => Value::Null,
+        Some(c) => {
+            let c = verify_close(&trust, &g, &document(Some(c))?, uses.last())?;
+            if usize::try_from(c.uses).ok() != Some(uses.len()) {
+                return Err(Reason::MandateCloseUses);
+            }
+            Value::Object(obj(alloc::vec![
+                ("reason", Value::from(c.reason.as_str())),
+                ("at", int(c.at)),
+                ("uses", int(c.uses)),
+            ]))
+        }
+    };
+    let totals = |t: &crate::mandate::Totals| {
+        let mut f = alloc::vec![("uses", int(t.uses))];
+        if let Some(a) = t.amount {
+            f.push(("amount", int(a)));
+        }
+        Value::Object(obj(f))
+    };
+    let uses = uses
+        .iter()
+        .map(|u| {
+            Value::Object(obj(alloc::vec![
+                ("seq", int(u.seq)),
+                ("operation", Value::from(u.request.operation.as_str())),
+                ("at", int(u.at)),
+                ("totals", totals(&u.totals)),
+            ]))
+        })
+        .collect();
+    let on_behalf = match &grant.on_behalf {
+        None => Value::Null,
+        Some((org, domain)) => Value::Object(obj(alloc::vec![
+            ("org", Value::from(org.as_str())),
+            ("domain", Value::from(domain.as_str())),
+        ])),
+    };
+    Ok(obj(alloc::vec![
+        (
+            "grant",
+            Value::Object(obj(alloc::vec![
+                ("type", Value::from(grant.kind)),
+                ("mandate", Value::from(grant.mandate.as_str())),
+                ("app", Value::from(grant.app.as_str())),
+                ("request", Value::from(grant.request.as_str())),
+                ("on_behalf", on_behalf),
+            ])),
+        ),
+        ("terms", terms.value.clone()),
+        ("uses", Value::Array(uses)),
+        ("close", close),
+    ]))
+}
+
+fn op_chain(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let events = strings_of(outer.get("events"))?;
+    let from = match outer.get("from") {
+        None | Some(Value::Null) => None,
+        Some(f) => Some(f.as_str().ok_or(Reason::InputMalformed)?),
+    };
+    let mut contents = Vec::new();
+    if let Some(list) = outer.get("contents") {
+        for c in list.as_array().ok_or(Reason::InputMalformed)? {
+            let seq = c
+                .get("seq")
+                .and_then(Value::as_number)
+                .and_then(Number::as_safe_integer)
+                .ok_or(Reason::InputMalformed)?;
+            contents.push((seq, document(c.get("content"))?));
+        }
+    }
+    let snapshot = match outer.get("snapshot") {
+        None | Some(Value::Null) => None,
+        Some(s) => Some(document(Some(s))?),
+    };
+    let ok = verify_chain(&trust, &events, from, &contents, snapshot.as_ref())?;
+    let opened = ok
+        .opened
+        .iter()
+        .map(|o| {
+            Value::Object(obj(alloc::vec![
+                ("seq", int(o.seq)),
+                ("change", Value::from(o.change.as_str())),
+                ("at", int(o.at)),
+            ]))
+        })
+        .collect();
+    Ok(obj(alloc::vec![
+        ("actor", Value::from(ok.actor.as_str())),
+        ("first", int(ok.first)),
+        ("last", int(ok.last)),
+        ("head", Value::from(ok.head.as_str())),
+        ("opened", Value::Array(opened)),
+        ("snapshot", ok.snapshot.map_or(Value::Null, int)),
+    ]))
+}
+
+fn op_bundle(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let ok = verify_bundle(&trust, &document(outer.get("evidence"))?)?;
+    let anchor = match &ok.anchor {
+        None => Value::Null,
+        Some(a) => Value::Object(obj(alloc::vec![
+            ("anchored_by", uint(a.anchored_by)),
+            ("tsa", uint(u64::try_from(a.tsa).unwrap_or(u64::MAX))),
+        ])),
+    };
+    Ok(obj(alloc::vec![
+        ("log", Value::from(ok.log.as_str())),
+        ("index", uint(ok.index)),
+        ("committed_by", uint(ok.committed_by)),
+        ("opening", Value::Bool(ok.opening)),
+        ("anchor", anchor),
+    ]))
 }
 
 fn op_consistency(outer: &Value) -> Result<Object, Reason> {

@@ -16,10 +16,10 @@ Under construction; nothing is released. Done so far:
 - the ledger core: signed notes (Ed25519), checkpoint and receipt bodies, leaves, and RFC 9162 inclusion and consistency proofs;
 - RFC 3161 time-stamp tokens: a strict DER reader, X.509 certificates, CMS SignedData, ESS signing-certificate attributes, chains to the registry roots at genTime, and RSASSA-PKCS1-v1_5 written on crypto-bigint (no `rsa` crate). Checked on the two real tokens Clavis uses and 800 single-byte flips of them: Collatio never accepts what the TypeScript refused, and refuses 10 flips the TypeScript let through (corrupted headers and unused certificates). RSA also passes Project Wycheproof;
 - the statement field kinds, checked against the TypeScript reader on 1,253 kind strings and 2,040 values;
-- the genesis formats drafted in `FORMATS.md` (some points open for review): the envelope with the new `aud`, `registry@1`, `dimension@1`, the trust chain (Master pin → sealer nomination → aggregated JWKS and `catalog@1`), and holder and app receipts with `accepted@1`, `ledger.receipt@1` and `key.opening@1`;
-- the operations `trust`, `proof`, `receipt`, `app_receipt`, `ledger_note`, `inclusion` and `consistency` (`ABI.md`), checked on 71 calls written by an independent issuer (`tools/genesis-vectors.mjs`, node:crypto only) and run both natively and as WebAssembly.
+- the genesis formats drafted in `FORMATS.md` (some points open for review): the envelope with the new `aud`, `registry@1`, `dimension@1`, the trust chain (Master pin → sealer nomination → aggregated JWKS and `catalog@1`), holder and app receipts with `accepted@1`, `ledger.receipt@1` and `key.opening@1`, delegation records, event chains (`event@1`, `event.content@1`, `state.snapshot@1`) and the ledger evidence bundle `ledger.bundle@1`;
+- every operation of the first release (`ABI.md`), checked on 132 calls written by an independent issuer (`tools/genesis-vectors.mjs`, node:crypto only) and run both natively and as WebAssembly.
 
-Not yet: delegation records, event chains, the genesis ledger evidence bundle, and the JavaScript and Go hosts.
+Not yet: the JavaScript and Go hosts and their conformance tests, and the aggregated chain head `state.heads@1`.
 
 Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node tools/check-release-age.mjs`).
 
