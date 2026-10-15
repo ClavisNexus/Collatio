@@ -12,6 +12,8 @@ Under construction; nothing is released. Done so far:
 
 - the strict JSON reader (unique keys, no lone surrogates, depth limit), RFC 8785 canonical form, Base64URL, digests and the envelope challenge, checked byte for byte against the Clavis TypeScript implementation they replace (`vectors/pregenesis`);
 - the method `webauthn@1` (COSE keys for ES256 and EdDSA, authenticator data, `clientDataJSON`, the origin rule), checked against the TypeScript implementation on 900 real and mutated assertions;
+- text rules, `shown@1`, key records (`key.bound@1`, `key.unbound@1`) and salted commitments;
+- the ledger core: signed notes (Ed25519), checkpoint and receipt bodies, leaves, and RFC 9162 inclusion and consistency proofs;
 - the ABI (`ABI.md`) with its fixed list of reasons; no operation answers yet.
 
 Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node tools/check-release-age.mjs`).

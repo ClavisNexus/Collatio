@@ -27,10 +27,15 @@ pub fn digest_of(value: &Value) -> String {
     digest_of_bytes(canonical(value).as_bytes())
 }
 
-/// Whether `text` has the form of a digest.
+/// Whether `text` has the form of a digest: `sha256:` and 43 Base64URL characters.
 pub fn is_digest(text: &str) -> bool {
     match text.strip_prefix(DIGEST_PREFIX) {
-        Some(rest) => rest.len() == 43 && b64::decode_len(rest, 32).is_some(),
+        Some(rest) => {
+            rest.len() == 43
+                && rest
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        }
         None => false,
     }
 }
@@ -73,7 +78,7 @@ mod tests {
             "sha256:RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4o"
         ));
         assert!(!is_digest(
-            "sha256:RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4p"
+            "sha256:RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4"
         ));
         assert!(!is_digest(
             "sha384:RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4o"

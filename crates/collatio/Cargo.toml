@@ -32,3 +32,6 @@ unreachable = "deny"
 todo = "deny"
 unimplemented = "deny"
 arithmetic_side_effects = "deny"
+
+[dev-dependencies]
+base64ct = { version = "=1.8.3", default-features = false, features = ["alloc"] }

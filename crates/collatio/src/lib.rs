@@ -18,11 +18,16 @@ extern crate alloc;
 
 pub mod b64;
 pub mod challenge;
+pub mod commit;
 pub mod cose;
 pub mod digest;
 pub mod jcs;
 pub mod json;
+pub mod keylog;
+pub mod ledger;
 pub mod reason;
+pub mod shown;
+pub mod text;
 pub mod webauthn;
 
 mod ops;
