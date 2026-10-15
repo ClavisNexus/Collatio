@@ -1,0 +1,18 @@
+{
+  "name": "@clavis.nexus/collatio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The Collatio verifier for Clavis evidence: collatio.wasm and its JavaScript host.",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/clavisnexus/collatio", "directory": "js" },
+  "type": "module",
+  "exports": {
+    ".": { "types": "./collatio.d.ts", "default": "./collatio.mjs" },
+    "./collatio.wasm": "./collatio.wasm"
+  },
+  "files": ["collatio.mjs", "collatio.d.ts", "collatio.wasm"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  }
+}

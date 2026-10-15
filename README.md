@@ -19,7 +19,9 @@ Under construction; nothing is released. Done so far:
 - the genesis formats drafted in `FORMATS.md` (some points open for review): the envelope with the new `aud`, `registry@1`, `dimension@1`, the trust chain (Master pin → sealer nomination → aggregated JWKS and `catalog@1`), holder and app receipts with `accepted@1`, `ledger.receipt@1` and `key.opening@1`, delegation records, event chains (`event@1`, `event.content@1`, `state.snapshot@1`) and the ledger evidence bundle `ledger.bundle@1`;
 - every operation of the first release (`ABI.md`), checked on 132 calls written by an independent issuer (`tools/genesis-vectors.mjs`, node:crypto only) and run both natively and as WebAssembly.
 
-Not yet: the JavaScript and Go hosts and their conformance tests, and the aggregated chain head `state.heads@1`.
+- the JavaScript host (`js/`, npm `@clavis.nexus/collatio`, no dependencies) and the Go host (`go/`, `github.com/clavisnexus/collatio/go` on wazero). Both pass the same conformance scenarios (`conformance/hosts-1.json`: ABI version and export checks, recovery after a trap, replacing an instance over its memory limit, running only catalog-listed unrevoked modules, following a revoked verifier to its successor, marking a stale catalog) and give the 132 answers above.
+
+Not yet: the aggregated chain head `state.heads@1`, releases (npm, Go tag, the verification plane) and CI.
 
 Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node tools/check-release-age.mjs`).
 
@@ -30,6 +32,9 @@ Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node 
 | `crates/collatio` | The verifier. `no_std` + `alloc` for `wasm32v1-none`; std on the host for tests |
 | `ABI.md` | `collatio-abi@1`: how a host calls the module, the operations and the reasons |
 | `FORMATS.md` | The byte-level formats from Clavis genesis on (draft) |
+| `js/` | `@clavis.nexus/collatio`: the JavaScript host (`npm test` after `./build.sh`) |
+| `go/` | `github.com/clavisnexus/collatio/go`: the Go host on wazero (`go test ./...` after `./build.sh`) |
+| `conformance/` | Host scenarios both hosts must pass, and the small modules they run (`tools/conformance-modules.mjs`) |
 | `vectors/` | Test vectors. `pregenesis/` holds reference answers from the TypeScript implementation; `genesis/` holds calls and answers from `tools/genesis-vectors.mjs` |
 | `build.sh` | Builds `out/collatio.wasm` and prints its hash |
 | `repro/` | The reference build: two `linux/amd64` builds from a pinned image must give the same hash |

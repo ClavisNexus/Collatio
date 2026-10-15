@@ -1081,3 +1081,109 @@ const out = join(root, "vectors", "genesis", "ops-1.json");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify({ about: "Calls and the answers FORMATS.md requires. Written by tools/genesis-vectors.mjs.", cases }, null, 1)}\n`);
 console.log(`${cases.length} cases → ${out}`);
+
+// ---------------------------------------------------------------- host conformance
+// Scenarios for the JavaScript and Go hosts (ABI.md §Hosts). `collatio` is the real module,
+// which the harness loads from out/collatio.wasm under the digest the scenario declares.
+
+const OTHER = `sha256:${b64u(sha256("collatio successor module"))}`;
+const verifierEntry = (digest) => ({ digest, source: { repo: "https://github.com/clavisnexus/collatio", tag: "v1.0.1", commit: "b".repeat(40) } });
+const catalogWith = (over) => signCatalog({ ...catalogBody, verifiers: [verifierEntry(VERIFIER), verifierEntry(OTHER)], ...over });
+const NOW = catalogBody.issued_at + 3600;
+const at = (input, now = NOW) => ({ ...input, now });
+const hostReceipt = (over = {}) => at(receiptCall(holder, over));
+const scenarios = [
+  { name: "abi version 2 is refused", modules: [{ file: "abi2.wasm" }], load_error: "unsupported_abi" },
+  { name: "a missing export is refused", modules: [{ file: "no-abi-version.wasm" }], load_error: "unsupported_abi" },
+  {
+    name: "after a trap the next call runs on a new instance",
+    modules: [{ file: "stub.wasm" }],
+    calls: [
+      { raw: "T", answer: { ok: false, reason: "verifier_trap" } },
+      { raw: "{}", answer: { ok: true, stub: true } },
+    ],
+    instantiations: 2,
+  },
+  {
+    name: "an instance over the memory limit is replaced",
+    modules: [{ file: "grow.wasm" }],
+    max_memory: 8 * 65536,
+    calls: [
+      { raw: "{}", answer: { ok: true, stub: true } },
+      { raw: "{}", answer: { ok: true, stub: true } },
+      { raw: "{}", answer: { ok: true, stub: true } },
+    ],
+    instantiations: 3,
+  },
+  {
+    name: "a receipt on the module it names",
+    modules: [{ file: "collatio", digest: VERIFIER }],
+    calls: [{ input: hostReceipt(), answer: { ok: true, type: "receipt@1", verifier: VERIFIER }, absent: ["catalog_stale"] }],
+  },
+  {
+    name: "the named module is run when the default is another",
+    modules: [
+      { file: "collatio", digest: OTHER },
+      { file: "collatio", digest: VERIFIER },
+    ],
+    calls: [{ input: hostReceipt({ trust: { catalog: catalogWith({}) } }), answer: { ok: true, verifier: VERIFIER } }],
+  },
+  {
+    name: "a revoked verifier is followed to its successor",
+    modules: [{ file: "collatio", digest: OTHER }],
+    calls: [
+      {
+        input: hostReceipt({ trust: { catalog: catalogWith({ revoked: [{ verifier: VERIFIER, reason: "test", successor: OTHER }] }) } }),
+        answer: { ok: true, verifier: OTHER },
+      },
+    ],
+  },
+  {
+    name: "a revoked verifier is not run",
+    modules: [{ file: "collatio", digest: VERIFIER }],
+    calls: [
+      {
+        input: hostReceipt({ trust: { catalog: catalogWith({ revoked: [{ verifier: VERIFIER, reason: "test", successor: OTHER }] }) } }),
+        answer: { ok: false, reason: "verifier_unavailable" },
+      },
+    ],
+  },
+  {
+    name: "a module the catalog does not list is not run",
+    modules: [{ file: "collatio", digest: OTHER }],
+    calls: [{ input: hostReceipt(), answer: { ok: false, reason: "verifier_unavailable" } }],
+  },
+  {
+    name: "the named module is not held",
+    modules: [{ file: "collatio", digest: OTHER }],
+    calls: [{ input: hostReceipt({ trust: { catalog: catalogWith({}) } }), answer: { ok: false, reason: "verifier_unavailable" } }],
+  },
+  {
+    name: "a stale catalog is marked",
+    modules: [{ file: "collatio", digest: VERIFIER }],
+    calls: [
+      { input: at(receiptCall(holder), catalogBody.issued_at + 8 * 86400), answer: { ok: true, catalog_stale: true } },
+      { input: at({ op: "trust", trust: trust() }, catalogBody.issued_at + 8 * 86400), answer: { ok: true, catalog_stale: true } },
+    ],
+  },
+  {
+    name: "the trust chain's refusal is the answer",
+    modules: [{ file: "collatio", digest: VERIFIER }],
+    calls: [{ input: hostReceipt({ trust: { master: ecJwk(otherMaster) } }), answer: { ok: false, reason: "trust_nomination" } }],
+  },
+  {
+    name: "other operations run on a listed module",
+    modules: [{ file: "collatio", digest: VERIFIER }],
+    calls: [
+      { input: at(chainCall()), answer: { ok: true, last: 3 }, absent: ["verifier"] },
+      { input: at({ op: "inclusion", index: 0, size: 1, leaf_hash: b64(leafHashes[0]), proof: [], root: b64(leafHashes[0]) }), answer: { ok: true } },
+    ],
+  },
+];
+const hostsOut = join(root, "conformance", "hosts-1.json");
+mkdirSync(dirname(hostsOut), { recursive: true });
+writeFileSync(
+  hostsOut,
+  `${JSON.stringify({ about: "Host conformance scenarios (ABI.md §Hosts). Written by tools/genesis-vectors.mjs.", scenarios }, null, 1)}\n`,
+);
+console.log(`${scenarios.length} host scenarios → ${hostsOut}`);

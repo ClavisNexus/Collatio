@@ -63,6 +63,23 @@ FORMATS.md describes the documents.
 
 `trust` is `{ "master": <JWK object>, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>", …] }`. Hashes in `inclusion`, `consistency` and `ledger_note` are standard Base64 with padding, as in signed notes; a proof has at most 64 hashes.
 
+## Hosts
+
+The JavaScript and Go hosts do the same things, checked by the same conformance tests (`conformance/hosts-1.json`, built by `tools/genesis-vectors.mjs`; the small modules in `conformance/modules/` come from `tools/conformance-modules.mjs`).
+
+- **Loading.** A host takes modules with their digests (`sha256:` + Base64URL of the bytes): it computes the digest when it has the bytes, and takes the declared one when a build step hands it a compiled module (Cloudflare Workers cannot compile at run time). The first module is the default. A host instantiates each module when it loads it and refuses the module (`unsupported_abi`) when an export is missing or `abi_version()` is not 1.
+- **Instances.** After a trap the host discards the instance and answers `{"ok":false,"reason":"verifier_trap"}`. After a call, it discards an instance whose memory is above its limit (64 MiB unless set). It instantiates again only at the next call that needs it.
+- **Which module runs.** Only modules the catalog lists in `verifiers` and does not revoke (genesis.md §18.4). To read the catalog the host first calls `trust` on the default module, and again on the first runnable module when the catalog revokes the default. Calls without `trust` run on the default module.
+- **Receipts.** For `receipt` and `app_receipt`, the host follows the dimension's `verifier` through `revoked[].successor` and answers from that module, running it when it is not the one that answered first. It adds `"verifier": "<digest>"` to the answer. When it does not hold that module, it answers `verifier_unavailable`.
+- **Freshness.** When `now` (the input's, or the clock's when the input has none) is more than 7 days after the catalog's `issued_at`, the host adds `"catalog_stale": true` to an `ok` answer of a call that read `trust`.
+
+Host reasons, added to the module's:
+
+| Reason | |
+|---|---|
+| `verifier_trap` | The module trapped. |
+| `verifier_unavailable` | No module the host holds may answer: none is in the catalog unrevoked, or the receipt names one the host does not hold. |
+
 ## Reasons
 
 Reasons are only added, never renamed or reused.

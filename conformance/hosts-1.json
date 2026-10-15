@@ -1,0 +1,518 @@
+{
+ "about": "Host conformance scenarios (ABI.md §Hosts). Written by tools/genesis-vectors.mjs.",
+ "scenarios": [
+  {
+   "name": "abi version 2 is refused",
+   "modules": [
+    {
+     "file": "abi2.wasm"
+    }
+   ],
+   "load_error": "unsupported_abi"
+  },
+  {
+   "name": "a missing export is refused",
+   "modules": [
+    {
+     "file": "no-abi-version.wasm"
+    }
+   ],
+   "load_error": "unsupported_abi"
+  },
+  {
+   "name": "after a trap the next call runs on a new instance",
+   "modules": [
+    {
+     "file": "stub.wasm"
+    }
+   ],
+   "calls": [
+    {
+     "raw": "T",
+     "answer": {
+      "ok": false,
+      "reason": "verifier_trap"
+     }
+    },
+    {
+     "raw": "{}",
+     "answer": {
+      "ok": true,
+      "stub": true
+     }
+    }
+   ],
+   "instantiations": 2
+  },
+  {
+   "name": "an instance over the memory limit is replaced",
+   "modules": [
+    {
+     "file": "grow.wasm"
+    }
+   ],
+   "max_memory": 524288,
+   "calls": [
+    {
+     "raw": "{}",
+     "answer": {
+      "ok": true,
+      "stub": true
+     }
+    },
+    {
+     "raw": "{}",
+     "answer": {
+      "ok": true,
+      "stub": true
+     }
+    },
+    {
+     "raw": "{}",
+     "answer": {
+      "ok": true,
+      "stub": true
+     }
+    }
+   ],
+   "instantiations": 3
+  },
+  {
+   "name": "a receipt on the module it names",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.0\",\"commit\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"2O0eTlqs0QHpHqT1u-xaadF_PgCCdYc9eU2VTLbJ9CBv0MsrbhBI3M7j4marKCgTioZsktzqarXtmBRzKjuRIA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": true,
+      "type": "receipt@1",
+      "verifier": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+     },
+     "absent": [
+      "catalog_stale"
+     ]
+    }
+   ]
+  },
+  {
+   "name": "the named module is run when the default is another",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao"
+    },
+    {
+     "file": "collatio",
+     "digest": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}},{\"digest\":\"sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"VyZhf9dr4UaCzYuoVW0sw9-pvxEjTQ_KsMMrdGuxdTqBFJ_MBKwyQaGWGDNZJf_oQrF2qSjf7s6cmCTrU9l5-g\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": true,
+      "verifier": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+     }
+    }
+   ]
+  },
+  {
+   "name": "a revoked verifier is followed to its successor",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}},{\"digest\":\"sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}],\"revoked\":[{\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"reason\":\"test\",\"successor\":\"sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao\"}],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"LDshioR_y6G06RWYrAQ6IKRRjKhQ-IIuvh05B2HbcDgXOApM76YeqNRQzatFZcmL288gF_J8BwQ5Zb0_k6EVrA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": true,
+      "verifier": "sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao"
+     }
+    }
+   ]
+  },
+  {
+   "name": "a revoked verifier is not run",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}},{\"digest\":\"sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}],\"revoked\":[{\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"reason\":\"test\",\"successor\":\"sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao\"}],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"aS7lfrBl6RWWgb4qAum6HZUylHjgPxhQyjOxH9Zvpth4p0yn5B8l9FQMCt2NnSnci5xkDKVCA9PzB4u0Iqwx2A\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": false,
+      "reason": "verifier_unavailable"
+     }
+    }
+   ]
+  },
+  {
+   "name": "a module the catalog does not list is not run",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.0\",\"commit\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"2O0eTlqs0QHpHqT1u-xaadF_PgCCdYc9eU2VTLbJ9CBv0MsrbhBI3M7j4marKCgTioZsktzqarXtmBRzKjuRIA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": false,
+      "reason": "verifier_unavailable"
+     }
+    }
+   ]
+  },
+  {
+   "name": "the named module is not held",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}},{\"digest\":\"sha256:XsXSelJoXABbQN6_XvFOGsEOjN7MHCDBlE6EygBILao\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.1\",\"commit\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"eDJWY57WL-Yv86dw_Kr5Jei_5myelnzVjG0ZB1cOvQuWuaeBHlKzwrDAGl60-YalnmfizxQ5dzMK2CP9q_fb8w\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": false,
+      "reason": "verifier_unavailable"
+     }
+    }
+   ]
+  },
+  {
+   "name": "a stale catalog is marked",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.0\",\"commit\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"2O0eTlqs0QHpHqT1u-xaadF_PgCCdYc9eU2VTLbJ9CBv0MsrbhBI3M7j4marKCgTioZsktzqarXtmBRzKjuRIA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1792441200
+     },
+     "answer": {
+      "ok": true,
+      "catalog_stale": true
+     }
+    },
+    {
+     "input": {
+      "op": "trust",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.0\",\"commit\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"2O0eTlqs0QHpHqT1u-xaadF_PgCCdYc9eU2VTLbJ9CBv0MsrbhBI3M7j4marKCgTioZsktzqarXtmBRzKjuRIA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "now": 1792441200
+     },
+     "answer": {
+      "ok": true,
+      "catalog_stale": true
+     }
+    }
+   ]
+  },
+  {
+   "name": "the trust chain's refusal is the answer",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "receipt",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "P5EnUpv7JcWbsodVDTmED9eP3qhwBuhCS-wdXiUKVfk",
+        "y": "cHJYdmVhrgMmQphPPgalyyvVpwg2RwkpEtODE2AOqOc"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.0\",\"commit\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"2O0eTlqs0QHpHqT1u-xaadF_PgCCdYc9eU2VTLbJ9CBv0MsrbhBI3M7j4marKCgTioZsktzqarXtmBRzKjuRIA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "evidence": "{\"type\":\"receipt@1\",\"statement\":{\"type\":\"profile.patch@1\",\"display_name\":\"Hamachi\"},\"envelope\":{\"suite\":\"webauthn@1\",\"dimension\":\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"aud\":\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"statement\":\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\",\"signer\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"rp\":\"clavis.nexus\",\"iat\":1791747761,\"nonce\":\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\"},\"proof\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"authenticator_data\":\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\",\"client_data_json\":\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\",\"signature\":\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\"},\"key\":{\"credential\":\"iLTLTTNCAQ-8oAUdAg7B3w\",\"public_key\":\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\",\"alg\":-7},\"dimension\":{\"type\":\"dimension@1\",\"name\":\"account\",\"statements\":[\"profile.patch@1\"],\"suites\":[\"webauthn@1\"],\"verifier\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"registry\":\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\",\"signer\":\"account\",\"sessions\":[\"portal\"],\"rp\":\"platform\",\"freshness\":300,\"single_use\":true,\"ext\":{\"required\":[],\"allowed\":[]},\"receipts\":[\"holder\"],\"key_log\":true},\"attestations\":[{\"type\":\"accepted@1\",\"subject\":\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\",\"at\":1791747762,\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"sig\":\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\"},{\"type\":\"ledger.receipt@1\",\"note\":\"clavis.ledger.receipt/v1\\nclavis.nexus/ledger/first-party.0\\n41\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\n\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\n\"}]}",
+      "expect": {
+       "statement": "profile.patch@1",
+       "aud": "account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw",
+       "signer": "eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw"
+      },
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": false,
+      "reason": "trust_nomination"
+     }
+    }
+   ]
+  },
+  {
+   "name": "other operations run on a listed module",
+   "modules": [
+    {
+     "file": "collatio",
+     "digest": "sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk"
+    }
+   ],
+   "calls": [
+    {
+     "input": {
+      "op": "chain",
+      "trust": {
+       "master": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "1iU7wflzwakUk-8irg6yab3Dpd87SJ_b9bZ8jspi0tE",
+        "y": "ghS8DbpQTRoQVJA1LlgDAH_sb3RWHCswg5nZpSoZKT8",
+        "kid": "clavis-master",
+        "alg": "ES256"
+       },
+       "jwks": "{\"keys\":[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"xDxvBH55VTWdrzci6tT3iIaNh3IzaDjqaUH_LDdIOkE\",\"y\":\"AGq5dLmjThnT2LXLdMnq0LRp3ey1mpXo1KphFcoCl_o\",\"kid\":\"clavis-sign-receipt-evni\",\"alg\":\"ES256\",\"clavis-slot\":\"sign-receipt\",\"clavis-sealer-signature\":\"0XSDrSg7lXtnP0isbQ4w1TnHp5Wz5wA4wnfAVG_fjheGIwc8-oPxdhg_ZaOQINR1Y46r6zOiqVEryJCTtBCadQ\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"4BkqSVENoqkAhGFoAg_twRnUpVZOVJOFxZEFJGzgPNc\",\"kid\":\"clavis-ledger-log-jcyv\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"WC_ramJGcN0btsNv7QBGlbqZAt_M8f2eFGPirJL9yArs6_Y4Yu6MNeMg3dI4CTQaEerz5eIdDFX88ePMMD_t7Q\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"1VkpfvtotkDGUbwZ6WaF1jiLczuD6NAA0Oc7oMzTzIk\",\"kid\":\"clavis-ledger-log-rlvn\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"_yR7L_LB8HVUnOFTI7colTAMWd5DAV9Hf19fC958nMAKc2tRkt1URUGD6UbJ2hIKmmzLao2QXAaRutKPD_67gw\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"Ayfi_xYr-UtZmJGSyADTkm-iREVX3y8Es408wU1DMHo\",\"kid\":\"clavis-ledger-log-qopg\",\"alg\":\"EdDSA\",\"clavis-slot\":\"ledger-log\",\"clavis-sealer-signature\":\"G7goex1ldWpl5dLMlFcdveCULn8TcbpXUd2rM02s3N2HDt1m5ff2q6jf0yvjW_YVxt1ho2L9Qa__QTd3OneE4A\"},{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"EFbsYLy98XW3lfydYUG12HZSgEYNgYnKLkeUvbYZmAY\",\"y\":\"KSYiPwdE4LJ3snhmXNxnAxWmGcNXBH1pwVJjSmSqUYM\",\"kid\":\"clavis-mandate-attest-ala3\",\"alg\":\"ES256\",\"clavis-slot\":\"mandate-attest\",\"clavis-sealer-signature\":\"BE1bJKPyg6_TRhy5XZu7vX6Kpf2G5I6i47m-4jsj_BBF3gdVRIKQ8lebfm09UQ9ITguoi3IZki3UFhFJvOzcng\"},{\"kty\":\"OKP\",\"crv\":\"Ed25519\",\"x\":\"sHIyRaibo0lfXoBKR8Gzsk7bSbhGPNA1-6AuuTriMIg\",\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"clavis-slot\":\"state-attest\",\"clavis-sealer-signature\":\"ol1Fw5KdY6xTx9IdXPY2fjb_GY4jRrXTDLVJD_AQsrd5tWvcurd1E8uS7tP14WdIfkNr1tfU-wTHnCBNLVt7Yw\"}],\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"}}",
+       "catalog": "{\"type\":\"catalog@1\",\"issued_at\":1791750000,\"sealer\":{\"payload\":{\"v\":1,\"purpose\":\"platform.sealer.nominate\",\"instance_id\":\"clavis.nexus\",\"sealer_kid\":\"clavis-sealer\",\"sealer_public_jwk\":{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"_EWRksxgAQUlVgc7BlU6S7SsVzV4UcUk_SRRM7OjNSI\",\"y\":\"u2429W5X0ujlT0ES2U2NMzGV9DO6G2Dp5qorwmyGysc\",\"kid\":\"clavis-sealer\",\"alg\":\"ES256\"},\"iat\":1791699505},\"signature\":\"mwq52wUd-VDLUhCNyYIfb-9pbISZYtG7baekAiiBDaGcjKE9ArVY9k2CYfZUficIucVIQwMNF_WQSD6btUBUAw\"},\"verifiers\":[{\"digest\":\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\",\"source\":{\"repo\":\"https://github.com/clavisnexus/collatio\",\"tag\":\"v1.0.0\",\"commit\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}}],\"revoked\":[],\"registries\":[\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\"],\"dimensions\":[\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\",\"sha256:bOP-hAEU2U6bwd0wc5MPw6BP-gzhAjN8l14UAtKGZXE\",\"sha256:b9i2qj8LzKRQssL6tH7RwGC1dTZGhLTTEL64UuoV5g0\"],\"logs\":[{\"id\":\"first-party.0\",\"kid\":\"clavis-ledger-log-jcyv\"},{\"id\":\"anchor\",\"kid\":\"clavis-ledger-log-rlvn\"}],\"signature\":{\"kid\":\"clavis-sealer\",\"alg\":\"ES256\",\"sig\":\"2O0eTlqs0QHpHqT1u-xaadF_PgCCdYc9eU2VTLbJ9CBv0MsrbhBI3M7j4marKCgTioZsktzqarXtmBRzKjuRIA\"}}",
+       "registries": [
+        "{\"type\":\"registry@1\",\"statements\":{\"profile.patch@1\":{\"aud\":\"account:<signer>\",\"fields\":{\"display_name\":\"text(200)\"}},\"app.sign@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"digest\":\"bytes32\"}},\"mandate.grant@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\"}},\"mandate.grant.on_behalf@1\":{\"aud\":\"request:<request>\",\"fields\":{\"request\":\"id\",\"app\":\"app\",\"mandate\":\"uuid\",\"terms\":\"digest\",\"org\":\"org\",\"domain\":\"domain\"}}}}"
+       ]
+      },
+      "events": [
+       "{\"type\":\"event@1\",\"actor\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"seq\":1,\"prev\":null,\"commit\":\"sha256:9P0UbsuJRD9fc3JYEO36c5ZHAr9HEfvbJ2eypoWuO5A\",\"envelope\":null,\"leaves\":[],\"attest\":{\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"sig\":\"fvIkRUx0_WYRzCk4EhwLbL_QZzpB7IObfWq-teo1VKffKeCSIW5rxWcmD17MccBoU4Bme75XbxQHZ4qXgGYfCg\"}}",
+       "{\"type\":\"event@1\",\"actor\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"seq\":2,\"prev\":\"sha256:-SOQI9mW55hyr6yDQyc4kG_60Z55w6nAWl497q5pD_0\",\"commit\":\"sha256:DERqBu3kurP7SiWdHRrEILnT19H7DMbT1Lyxbi2TXfo\",\"envelope\":\"sha256:FxBIZvTeCCxUsTedtE2Rgzy8YENzmfhTpgvg2iP7vUo\",\"leaves\":[\"c6550e656b9ca0796ccada63b5f36257b14ec9f66598c9c905107634081626b9\"],\"attest\":{\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"sig\":\"Owt10L5fqv1aFwmJxmmNdVmZBewXASK5Xvd9nl_KdT5MSd9BeBn8N7AIRRgARhTT3NOKB9YpCPSCUANi2TvlBA\"}}",
+       "{\"type\":\"event@1\",\"actor\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"seq\":3,\"prev\":\"sha256:I5S_KYnOgcWlbv1dP1v0rJZAnideJgixnGjpiE0lta0\",\"commit\":\"sha256:75LMpCG4dOgf_ueX-V75dSF_01GMI19Rv6tfulhTL9Y\",\"envelope\":null,\"leaves\":[],\"attest\":{\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"sig\":\"ADJnF4J-fO9JDdOm-MJesqYwwQ4f4o4vB2pKSiXNxsj8RJiIeeELHxnAdFsG5vTAfeYRqG9HjIJK8GdZzBncBg\"}}"
+      ],
+      "from": null,
+      "contents": [
+       {
+        "seq": 1,
+        "content": "{\"salt\":\"MDkSAjUbMvJ_IZFjZqHqIh9j3SfqCCJWzpe3JYT-vHQ\",\"change\":\"profile.patch@1\",\"at\":1791747762,\"payload\":{\"display_name\":\"Name 1\"},\"receipt\":null}"
+       },
+       {
+        "seq": 2,
+        "content": "{\"salt\":\"vZ3rAGXcer5Z7LsYKt7-XLUI5j2JokQr4rU9Xvos78c\",\"change\":\"profile.patch@1\",\"at\":1791747763,\"payload\":{\"display_name\":\"Name 2\"},\"receipt\":\"{\\\"type\\\":\\\"receipt@1\\\",\\\"statement\\\":{\\\"type\\\":\\\"profile.patch@1\\\",\\\"display_name\\\":\\\"Hamachi\\\"},\\\"envelope\\\":{\\\"suite\\\":\\\"webauthn@1\\\",\\\"dimension\\\":\\\"sha256:6dARq_ah3CjoDcTozcM4xOk3RF6dOH9sXNHZKNSInOA\\\",\\\"aud\\\":\\\"account:eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\\\",\\\"statement\\\":\\\"sha256:-iBShTyQSj-7fnrfbyjisYbATOiD7QILi6k8YVhmOy0\\\",\\\"signer\\\":\\\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\\\",\\\"rp\\\":\\\"clavis.nexus\\\",\\\"iat\\\":1791747761,\\\"nonce\\\":\\\"Fy_HxIP6xyqhUAuCnoVYAVVB-019MNFB4J7PGoo8l6Q\\\"},\\\"proof\\\":{\\\"credential\\\":\\\"iLTLTTNCAQ-8oAUdAg7B3w\\\",\\\"authenticator_data\\\":\\\"md-iBWdzg2-0y4QaLZPSeSd7cvPRcAxv-Mw9BV6ttusFAAAABw\\\",\\\"client_data_json\\\":\\\"eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiXy1OSEpmemNjbVlhVmpna0daSVhndmdDZ3ZGNzBrT1dWek5FUlNxNDNfSSIsIm9yaWdpbiI6Imh0dHBzOi8vY2xhdmlzLm5leHVzIiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ\\\",\\\"signature\\\":\\\"MEYCIQDcLqPX8x1YNyGgNt2EgKzBkVLyDU18kdcUvwWqLSniigIhAO7HGYzPv5LCYKHQEfWUx2uk_9cltuQnPYQq06tEDIF9\\\"},\\\"key\\\":{\\\"credential\\\":\\\"iLTLTTNCAQ-8oAUdAg7B3w\\\",\\\"public_key\\\":\\\"pQECAyYgASFYIJr_Li6froafOiTPRW2Yb5MaYhbkOhyp3-ExuCrErx0BIlggFTolk0fMhoTeemsi29w8YJmPIYJqvXFM_dhkcZ1jFMw\\\",\\\"alg\\\":-7},\\\"dimension\\\":{\\\"type\\\":\\\"dimension@1\\\",\\\"name\\\":\\\"account\\\",\\\"statements\\\":[\\\"profile.patch@1\\\"],\\\"suites\\\":[\\\"webauthn@1\\\"],\\\"verifier\\\":\\\"sha256:RjKSu74vDGvlENVApJ4AV5FnU06LzK9cv_Yy-4IjmRk\\\",\\\"registry\\\":\\\"sha256:eEsajeC0PycweMBsD2kUL-fogAxPrUoHZMQCoEtJkzY\\\",\\\"signer\\\":\\\"account\\\",\\\"sessions\\\":[\\\"portal\\\"],\\\"rp\\\":\\\"platform\\\",\\\"freshness\\\":300,\\\"single_use\\\":true,\\\"ext\\\":{\\\"required\\\":[],\\\"allowed\\\":[]},\\\"receipts\\\":[\\\"holder\\\"],\\\"key_log\\\":true},\\\"attestations\\\":[{\\\"type\\\":\\\"accepted@1\\\",\\\"subject\\\":\\\"sha256:QXQMfRW6XQLhtRp3Z7COVsZyh2ufCyZ2sb95gdC7-AE\\\",\\\"at\\\":1791747762,\\\"kid\\\":\\\"clavis-sign-receipt-evni\\\",\\\"alg\\\":\\\"ES256\\\",\\\"sig\\\":\\\"mUSpRQklL9kdU4PJVWfOYfQ2GVdoOmhDKXSAtsAY63VAtNckHB6mGUiPLapohjoRZ7Bhl3-iwYE-t9jBtXlT7A\\\"},{\\\"type\\\":\\\"ledger.receipt@1\\\",\\\"note\\\":\\\"clavis.ledger.receipt/v1\\\\nclavis.nexus/ledger/first-party.0\\\\n41\\\\nLjI9zZX6PGAmGYEXl5izu3NfjQ+I6RUfSYcLjjGfbRA=\\\\n\\\\n— clavis-ledger-log-jcyv H9iO56Y0j6/vf2re/SixMirFe/MT9B6GlbslB1Fb5jV1hjnT7gaBAo0LpT/G0XjT13W7+vetztIho1gYdVSg5OXL9w4=\\\\n\\\"}]}\"}"
+       }
+      ],
+      "snapshot": "{\"type\":\"state.snapshot@1\",\"actor\":\"eu1.ldsbXKim8uYrBkbEQ8ndw1QFL6J2_yrRQ_e7a-J3JZw\",\"seq\":2,\"head\":\"sha256:I5S_KYnOgcWlbv1dP1v0rJZAnideJgixnGjpiE0lta0\",\"state\":{\"display_name\":\"Name 2\"},\"attest\":{\"kid\":\"clavis-state-attest-qpac\",\"alg\":\"EdDSA\",\"sig\":\"VlapBMpHUvMCB6au8Hq-fw-0dalF8A2LwJKAiY84ppjr1yTe8Cf8a-K3Dtx90WV50zN1HyMy79YSxEPcEg1tCg\"}}",
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": true,
+      "last": 3
+     },
+     "absent": [
+      "verifier"
+     ]
+    },
+    {
+     "input": {
+      "op": "inclusion",
+      "index": 0,
+      "size": 1,
+      "leaf_hash": "6aaiJc8IktLu7WO4UXr4lzmUv96u82Xvi6IcTf3n92E=",
+      "proof": [],
+      "root": "6aaiJc8IktLu7WO4UXr4lzmUv96u82Xvi6IcTf3n92E=",
+      "now": 1791753600
+     },
+     "answer": {
+      "ok": true
+     }
+    }
+   ]
+  }
+ ]
+}

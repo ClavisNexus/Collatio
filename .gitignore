@@ -3,3 +3,4 @@ target/
 out/
 repro/out-*/
 .DS_Store
+js/collatio.wasm
