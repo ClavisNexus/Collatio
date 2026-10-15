@@ -52,8 +52,8 @@ FORMATS.md describes the documents.
 |---|---|---|
 | `trust` | `trust` | `instance`, `sealer`, `issued_at`, `keys` (`kid`, `slot`, `alg`), `logs`, `verifiers`, `revoked`, `registries`, `dimensions` |
 | `proof` | `envelope`, `proof`, `key` (JSON strings) | `origin`, `counter`, `alg`, `backup_eligible`, `backed_up` |
-| `receipt` | `trust`, `evidence`, `expect` (optional; only `statement`, `aud`, `signer`) | `type`, `statement`, `envelope`, `dimension` (`digest`, `name`, `verifier`, `registry`, `signer`), `accepted` (`kid`, `at`), `anchor` (`log`, `index`), `key_record` (`log`, `index`, `at`, or null), and the `proof` answer |
-| `app_receipt` | as `receipt`, and `holder_proof` (optional JSON string) | as `receipt`, without `key_record` and the `proof` answer |
+| `receipt` | `trust`, `evidence`, `expect` (optional; only `statement`, `aud`, `signer`) | `type`, `statement`, `envelope`, `dimension` (`digest`, `name`, `verifier`, `registry`, `signer`), `accepted` (`kid`, `at`), `anchor` (`log`, `index`), `key_record` (`log`, `index`, `at`, or null), `key` (the receipt's key), and the `proof` answer |
+| `app_receipt` | as `receipt`, and `holder_proof` (optional JSON string) | as `receipt`, without `key_record`, `key` and the `proof` answer |
 | `ledger_note` | `trust`, `note` | `log`, `kid`, `body` (`kind` `receipt` with `origin`, `index`, `leaf_hash`; or `checkpoint` with `origin`, `size`, `root`, `time`) |
 | `inclusion` | `index`, `size`, `leaf_hash`, `proof`, `root` | nothing more |
 | `consistency` | `first`, `second`, `first_root`, `second_root`, `proof` | nothing more |

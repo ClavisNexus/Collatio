@@ -499,6 +499,7 @@ const holderAnswer = (place, extra = {}) => ({
   origin: `https://${HOST}`,
   counter: 7,
   statement: accountStatement,
+  key: KEY,
   ...extra,
 });
 ok("receipt", receiptCall(holder), holderAnswer({ log: "first-party.0", index: 41 }, { key_record: null }));

@@ -261,6 +261,9 @@ fn op_receipt(outer: &Value, kind: Kind) -> Result<Object, Reason> {
     ];
     if kind == Kind::Holder {
         fields.push(("key_record", key_record));
+        // The key the proof verified with, so the acceptor can check it is still registered.
+        let key = evidence.get("key").cloned().unwrap_or(Value::Null);
+        fields.push(("key", key));
     }
     if let Some(p) = &v.proof {
         fields.extend(proof_fields(p));
