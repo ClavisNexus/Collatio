@@ -1,3 +1,5 @@
 .wrangler/
 target/
+out/
+repro/out-*/
 .DS_Store

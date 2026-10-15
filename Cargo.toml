@@ -1,0 +1,23 @@
+[workspace]
+resolver = "3"
+members = ["crates/collatio"]
+exclude = ["spike"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/ClavisNexus/Collatio"
+publish = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+debug = false
+strip = true
+incremental = false
+overflow-checks = false
+
+[profile.dev]
+panic = "abort"
