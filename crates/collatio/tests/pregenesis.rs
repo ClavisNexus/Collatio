@@ -15,11 +15,7 @@ use collatio::jcs::canonical;
 use collatio::json::{Value, parse};
 
 fn load() -> Value {
-    let path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../../vectors/pregenesis/jcs-1.json"
-    );
-    parse(&std::fs::read(path).expect("vectors")).expect("vector file reads")
+    load_file("jcs-1.json")
 }
 
 fn s<'a>(v: &'a Value, k: &str) -> &'a str {
@@ -255,4 +251,51 @@ mod base64 {
     pub fn encode(x: &[u8]) -> String {
         Base64::encode_string(x)
     }
+}
+
+/// Whether a kind string uses the kind `org`, which only Collatio knows.
+fn uses_org(kind: &str) -> bool {
+    kind.split(['(', ')', ',']).any(|part| part == "org")
+}
+
+/// Where Collatio is stricter on purpose: integers written with a fraction or an exponent, and
+/// Base64URL of a fixed length whose unused bits are not zero.
+fn stricter_on_purpose(kind: &str, value: &str) -> bool {
+    let number_spelling = value.contains(['.', 'e', 'E']) && !value.starts_with(['"', '[', '{']);
+    let non_canonical = kind.contains("bytes32") && value.len() == 45 && !value.ends_with("A\"");
+    (kind.contains("int(") && number_spelling) || non_canonical
+}
+
+#[test]
+fn field_kinds_match_pregenesis() {
+    use collatio::fields::parse_kind;
+    let file = load_file("fields-1.json");
+    let kinds = file.get("kinds").and_then(Value::as_array).unwrap();
+    assert!(kinds.len() >= 1000);
+    for case in kinds {
+        let kind = s(case, "kind");
+        let ts = case.get("ok").and_then(Value::as_bool).unwrap();
+        let ours = parse_kind(kind).is_some();
+        assert!(
+            ours == ts || (ours && uses_org(kind)),
+            "kind {kind:?}: {ours}, pre-genesis {ts}"
+        );
+    }
+    let values = file.get("values").and_then(Value::as_array).unwrap();
+    assert!(values.len() >= 1000);
+    let mut stricter = 0;
+    for case in values {
+        let (kind, text) = (s(case, "kind"), s(case, "value"));
+        let ts = case.get("ok").and_then(Value::as_bool).unwrap();
+        let value = parse(text.as_bytes()).unwrap();
+        let ours = parse_kind(kind).unwrap().check(&value);
+        if ours != ts {
+            assert!(
+                ts && !ours && stricter_on_purpose(kind, text),
+                "kind {kind:?} value {text}: {ours}, pre-genesis {ts}"
+            );
+            stricter += 1;
+        }
+    }
+    assert!(stricter <= 20, "{stricter} stricter answers");
 }

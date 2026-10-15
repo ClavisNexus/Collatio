@@ -20,7 +20,7 @@ Unchanged from the current design except `aud`.
 |---|---|
 | `suite` | Type ID of the method (`webauthn@1`) |
 | `dimension` | Digest of the dimension definition (§3) |
-| `aud` | The writer that consumes the signature: `<kind>:<id>` with kind `account`, `org`, `domain`, `document` or `request`; the whole value matches the ID characters and is ≤ 260 characters |
+| `aud` | The writer that consumes the signature: `<writer>:<id>`, ≤ 260 characters of the ID set (see below) |
 | `statement` | Digest of the statement (§2) |
 | `signer` | ID (≤ 200) |
 | `rp` | Lowercase domain, labels `[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?`, ≤ 253 |
@@ -30,6 +30,9 @@ Unchanged from the current design except `aud`.
 | `crit` (optional) | Non-empty sorted set of names present in `ext` |
 
 The WebAuthn challenge is SHA-256(UTF-8(`suite`) ‖ 0x00 ‖ UTF-8(JCS(envelope))).
+
+- The writers at genesis are `account`, `org`, `domain`, `document` and `request` (genesis.md §5.2). They are named by the registry's templates, not listed in Collatio: the envelope only requires `<writer>` to be `[a-z][a-z0-9_]{0,31}` and something after the colon. **Open:** this keeps a new writer a registry change instead of a module release.
+- An extension Collatio knows (`shown@1`) is checked whether or not `crit` names it. An unknown one is not read; when `crit` names it, the receipt is refused (`extension_unknown`).
 
 ## 2. Statements and `registry@1`
 
@@ -43,10 +46,10 @@ A statement is `{ "type": "<type ID>", <fields> }`. Which fields a type has, the
 ```
 
 - Field names `[a-z][a-z0-9_]*`. A trailing `?` marks an optional field.
-- The kind strings and their meaning are rules inside Collatio. The current kinds carry over unchanged: `id`, `uuid`, `app`, `subject`, `credential`, `digest`, `bytes32`, `hex64`, `domain`, `email`, `text(n)`, `int(min,max)`, `oneOf(a|b|…)`, `sortedSet(kind,max)`, `nullable(kind)`. New: `org`, an Org ID `<cell>.<UUID>` with the cell `[a-z]{2}[1-9][0-9]{0,2}`. A kind string must be in canonical form; an unknown or malformed one makes the whole registry unusable.
-- The `aud` template is `[a-z0-9:._-]` text with `<field>` placeholders (as now). Each placeholder names a required field, or `signer` for the envelope's signer (new). The result must be a valid `aud` (§1).
+- The kind strings and their meaning are rules inside Collatio. The current kinds carry over unchanged: `id`, `uuid`, `app`, `subject`, `credential`, `digest`, `bytes32`, `hex64`, `domain`, `email`, `text(n)`, `int(min,max)`, `oneOf(a|b|…)`, `sortedSet(kind,max)`, `nullable(kind)`. New: `org`, an Org ID `<cell>.<UUID>` with the cell `[a-z]{2}[1-9][0-9]{0,2}`. A kind string must be in canonical form; an unknown or malformed one makes the whole registry unusable. Two readings are stricter than before (§0): `bytes32` must be canonical Base64URL, and `int(…)` values must be written as integers. `credential` stays as before (Base64URL characters, any length that can be Base64URL, ≤ 1366).
+- The `aud` template is `[a-z0-9:._-]` text with `<field>` placeholders (as now). It starts with the literal `<writer>:`. Each placeholder names a required field, or `signer` for the envelope's signer (new). The result must be a valid `aud` (§1).
 - **Open:** field names `type` and `signer` are reserved, so `<signer>` never means a statement field. No current statement has a field named `signer`.
-- A registry document only grows: a new document repeats every earlier type unchanged. Collatio reads only a document whose digest equals the dimension's `registry`.
+- A registry document only grows: a new document repeats every earlier type unchanged. Collatio reads only a document whose digest equals the dimension's `registry`, and only when the catalog lists that digest in `registries` and the dimension's digest in `dimensions`.
 
 ## 3. `dimension@1`
 
@@ -83,6 +86,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 
 - **Core**: every member except `attestations` and `disclosures`. The subject of an attestation is `digestOf(core)`.
 - `attestations`: 1–8 objects; `disclosures` (holder only, optional): 1–8 objects. Each has a `type` that is a type ID. An attestation or disclosure of an unknown type is passed over unread; a known one that fails refuses the receipt. **Open:** the limit of 8.
+- Order of checks, so a receipt gets one reason: shape, envelope, dimension (digest, catalog), registry, statement, `aud`, extensions, receipt kind, the caller's expectations, the proof, disclosures, attestations.
 - Required: at least one valid `accepted@1`, and a valid `ledger.receipt@1` for the receipt anchor.
 
 ### 4.1 `accepted@1`
@@ -93,7 +97,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 
 - `subject` is the core digest; `at` is Unix seconds; `kid` names a key in the JWKS whose `${ns}-slot` is `sign-receipt`.
 - `sig` is the ES256 signature as raw r‖s (64 bytes, Base64URL) over UTF-8(JCS(the attestation without `sig`)).
-- **Open:** `alg` other than `ES256` (a post-quantum attestation) is skipped as unknown rather than refused, so a second attestation can be added later without failing old verifiers.
+- **Open:** `alg` other than `ES256` (a post-quantum attestation) is skipped as unknown rather than refused, so a second attestation can be added later without failing old verifiers. It must still have the six members, a digest `subject` and an integer `at`.
 
 ### 4.2 `ledger.receipt@1`
 
@@ -101,7 +105,8 @@ The current definition plus `verifier` and `registry`; 14 members:
 { "type": "ledger.receipt@1", "note": "clavis.ledger.receipt/v1\n<origin>\n<index>\n<leaf hash>\n\n— <kid> <signature>\n" }
 ```
 
-- The note (≤ 4096 characters, as the current binding's receipt) is a signed note whose body is a ledger receipt. It verifies with the key the catalog lists for the log named in the origin (`<host>/ledger/<log id>`), and that key's slot is `ledger-log`.
+- The note (≤ 4096 characters, as the current binding's receipt) is a signed note whose body is a ledger receipt. It verifies with the key the catalog lists for the log named in the origin (`<host>/ledger/<log id>`), and that key's slot is `ledger-log`. The signature line's name is the kid.
+- **Open:** Collatio checks that `<host>` is a lowercase host but does not tie it to the instance. The caller sees the origin in the `ledger_note` answer. Tying it to the nomination's `instance_id` is possible when the ledger host always equals it.
 - The log is a first-party shard (`first-party.<n>`) for the receipt anchor and for disclosed key records.
 - The leaf hash must be one of the leaves computable from the receipt: the receipt anchor `{ v: 1, c }` with c = hex(SHA-256(UTF-8(JCS({ type: "receipt.anchor@1", envelope: digestOf(envelope), proof: digestOf(holder proof) })))) — the app receipt uses its `proof` digest — or a disclosed key record's commitment. A ledger receipt matching none of them refuses the receipt.
 
@@ -113,6 +118,7 @@ The current definition plus `verifier` and `registry`; 14 members:
 
 - The commitment of `{salt, record}` (`clavis.commit.v1`) is a leaf covered by one of the receipt's `ledger.receipt@1`.
 - The record binds the receipt's key: same `credential`, `public_key` and `alg`; same `rp` as the envelope; and, for `account` dimensions, the same `signer`.
+- **Open:** at most one `key.opening@1` per receipt (a receipt has one key).
 
 ## 5. Trust
 
@@ -154,23 +160,12 @@ As in the design (§10.1), signed by the sealer:
   "signature": { "kid": "…", "alg": "ES256", "sig": "…" } }
 ```
 
+- `verifiers`: at least one, digests unique; `source.repo` is an `https://` URL, `tag` printable ASCII, `commit` 40 or 64 lowercase hex. `revoked`: each `verifier` and `successor` is a listed verifier, they differ, and a verifier is revoked once; `reason` is trimmed text ≤ 500. `registries`, `dimensions`: digests without duplicates, in the order they were added. `logs`: `first-party.<n>` or `anchor`; a log appears once per kid, so twice while its key rotates.
 - **Open:** `issued_at` as Unix seconds (the design sketch shows a date string; Clavis types use integers).
 - **Open:** the signature as a `signature` member over UTF-8(JCS(catalog without `signature`)), with `kid` equal to the nominated sealer's kid.
 
 ## 6. Operations
 
-Inputs follow ABI.md. As in the design (§18.3), the caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
-
-| `op` | Input | Answer (when `ok`) |
-|---|---|---|
-| `trust` | `trust` | the nominated sealer, keys by slot, logs, verifiers, registries, dimensions |
-| `proof` | `envelope`, `proof`, `key` | origin, counter, algorithm (used at ceremony completion) |
-| `receipt` | `trust`, `evidence`, `expect` (statement type, `aud`, `signer`) | statement, envelope, signer, attestations checked, key binding result |
-| `app_receipt` | as `receipt`, optional `holder_proof` | as `receipt` |
-| `ledger_note` | `trust`, `note` | the body and its parsed checkpoint or receipt |
-| `inclusion` | `index`, `size`, `leaf`, `proof`, `root` | — |
-| `consistency` | `first`, `second`, `first_root`, `second_root`, `proof` | — |
-| `bundle` | `trust`, `evidence` (ledger evidence bundle) | `committed_by`, opening checked, anchor with TSA count |
-| `mandate_history`, `chain` | — | defined with the delegation records and event chains (next draft) |
+ABI.md lists the operations, what each reads and answers, and the reasons. As in the design (§18.3), the caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
 
 Not in this draft: delegation records (`mandate.*@1`), event chains (`event@1`, `event.content@1`, `state.snapshot@1`, `state.head@1`, `state.heads@1`), and the genesis form of the ledger evidence bundle.
