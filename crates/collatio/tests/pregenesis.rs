@@ -52,3 +52,40 @@ fn challenges_match_pregenesis() {
         );
     }
 }
+
+#[test]
+fn webauthn1_matches_pregenesis() {
+    use collatio::webauthn::verify_webauthn1;
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../vectors/pregenesis/webauthn-1.json"
+    );
+    let file = parse(&std::fs::read(path).expect("vectors")).expect("vector file reads");
+    let cases = file.get("cases").and_then(Value::as_array).unwrap();
+    assert!(cases.len() >= 900);
+    let mut accepted = 0;
+    for (i, case) in cases.iter().enumerate() {
+        let expect = case.get("expect").unwrap();
+        let got = verify_webauthn1(
+            case.get("envelope").unwrap(),
+            case.get("proof").unwrap(),
+            case.get("key").unwrap(),
+        );
+        match (expect.get("ok"), got) {
+            (Some(Value::Bool(true)), Ok(ok)) => {
+                accepted += 1;
+                assert_eq!(ok.origin, s(expect, "origin"), "case {i}");
+                let counter = expect
+                    .get("counter")
+                    .and_then(Value::as_number)
+                    .and_then(|n| n.as_safe_integer());
+                assert_eq!(Some(i64::from(ok.counter)), counter, "case {i}");
+            }
+            (Some(Value::Bool(false)), Err(e)) => {
+                assert_eq!(e.as_str(), s(expect, "reason"), "case {i}")
+            }
+            (_, got) => panic!("case {i}: expected {expect:?}, got {got:?}"),
+        }
+    }
+    assert!(accepted >= 200);
+}

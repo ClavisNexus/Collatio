@@ -18,10 +18,12 @@ extern crate alloc;
 
 pub mod b64;
 pub mod challenge;
+pub mod cose;
 pub mod digest;
 pub mod jcs;
 pub mod json;
 pub mod reason;
+pub mod webauthn;
 
 mod ops;
 pub use ops::{MAX_INPUT, run};

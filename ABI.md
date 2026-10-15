@@ -15,6 +15,8 @@ How a host runs `collatio.wasm`. The JavaScript and Go hosts implement this page
 | `free` | `(ptr: i32, len: i32)` | Returns a buffer from `alloc` or from `verify`. |
 | `verify` | `(in_ptr: i32, in_len: i32) -> i32` | Runs one call. Returns a pointer to the answer. |
 
+Other exports (the linker's `__data_end` and `__heap_base`) are not part of the ABI; hosts ignore them.
+
 ## A call
 
 1. `p = alloc(n)`; write the n bytes of the input (UTF-8 JSON) at `p`.
