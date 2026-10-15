@@ -1,0 +1,6 @@
+verifier/target/
+out/
+worker/gen/
+repro/out-*/
+results/
+vectors/answers.jsonl

@@ -1,0 +1,10 @@
+// Spike only (genesis.md §18.10). No routes, bindings, secrets or keys. Delete after measuring:
+//   wrangler delete --config spike/worker/wrangler.jsonc
+{
+  "name": "clavis-collatio-spike",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}
