@@ -19,9 +19,9 @@ Under construction; nothing is released. Done so far:
 - the genesis formats in `FORMATS.md`: the envelope with the new `aud`, `registry@1`, `dimension@1`, the trust chain (Master pin → sealer nomination → aggregated JWKS and `catalog@1`), holder and app receipts with `accepted@1`, `ledger.receipt@1` and `key.opening@1`, delegation records, event chains (`event@1`, `event.content@1`, `state.snapshot@1`) and the ledger evidence bundle `ledger.bundle@1`;
 - every operation of the first release (`ABI.md`), checked on 142 calls written by an independent issuer (`tools/genesis-vectors.mjs`, node:crypto only) and run both natively and as WebAssembly.
 
-- the JavaScript host (`js/`, npm `@clavis.nexus/collatio`, no dependencies) and the Go host (`go/`, `github.com/clavisnexus/collatio/go` on wazero). Both pass the same conformance scenarios (`conformance/hosts-1.json`: ABI version and export checks, recovery after a trap, replacing an instance over its memory limit, running only catalog-listed unrevoked modules, following a revoked verifier to its successor, marking a stale catalog) and give the 132 answers above.
+- the JavaScript host (`js/`, npm `@clavis.nexus/collatio`, no dependencies) and the Go host (`go/`, `github.com/clavisnexus/collatio/go` on wazero). Both pass the same conformance scenarios (`conformance/hosts-1.json`: ABI version and export checks, recovery after a trap, replacing an instance over its memory limit, running only catalog-listed unrevoked modules, following a revoked verifier to its successor, marking a stale catalog) and give the 142 answers above.
 
-Not yet: the aggregated chain head `state.heads@1`, releases (npm, Go tag, the verification plane) and CI.
+Released as `v1.0.0` (the Go module as `go/v1.0.0`); `collatio.wasm` of that release is `sha256:FPh2AxvhGnU5XiO69qivINTC7WGW_4_IzW_iPOdGyKc`. Not yet: publishing to npm, the aggregated chain head `state.heads@1` and CI.
 
 Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node tools/check-release-age.mjs`).
 
