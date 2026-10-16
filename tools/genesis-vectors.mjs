@@ -1113,10 +1113,29 @@ no(
   "json_duplicate_key",
 );
 
+// The app receipt's anchor as a host checks it online (genesis.md §7.4): a first-party checkpoint that covers
+// index 42, then the inclusion proof from the anchor's leaf hash to that checkpoint's root.
+{
+  const leaves = Array.from({ length: 43 }, (_, i) => (i === 42 ? leafHash(appAnchor) : leafHash(hex(bytes(`first-party.0 leaf ${i}`)))));
+  const root = mth(leaves);
+  const body = `${HOST}/ledger/first-party.0\n43\n${b64(root)}\ntime ${IAT + 120}\n`;
+  ok(
+    "ledger_note: a first-party checkpoint covering the app receipt's anchor",
+    { op: "ledger_note", trust: trust(), note: note(body, ledgerFp0, KEYS.fp0.kid) },
+    { log: "first-party.0", kid: KEYS.fp0.kid, body: { kind: "checkpoint", origin: `${HOST}/ledger/first-party.0`, size: 43, root: b64(root), time: IAT + 120 } },
+  );
+  ok(
+    "inclusion: the app receipt's anchor in that checkpoint",
+    { op: "inclusion", index: 42, size: 43, leaf_hash: b64(leaves[42]), proof: path(42, leaves).map(b64), root: b64(root) },
+    {},
+  );
+}
+
 const out = join(root, "vectors", "genesis", "ops-1.json");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify({ about: "Calls and the answers FORMATS.md requires. Written by tools/genesis-vectors.mjs.", cases }, null, 1)}\n`);
 console.log(`${cases.length} cases → ${out}`);
+
 
 // ---------------------------------------------------------------- host conformance
 // Scenarios for the JavaScript and Go hosts (ABI.md §Hosts). `collatio` is the real module,
