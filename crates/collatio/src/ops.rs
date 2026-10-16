@@ -16,7 +16,10 @@ use crate::jcs::canonical;
 use crate::json::{self, Number, Object, Value};
 use crate::ledger::merkle::{verify_consistency, verify_inclusion};
 use crate::logs::{Body, verify_log_note};
-use crate::mandate::{GrantContext, parse_terms, read_grant, verify_close, verify_use};
+use crate::mandate::{
+    GrantContext, MANDATE_CLOSE_1, MANDATE_USE_1, Totals, parse_close, parse_terms, parse_use,
+    read_grant, record_digest, verify_app_jwt, verify_close, verify_sigs, verify_use,
+};
 use crate::reason::Reason;
 use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_APP_1, verify_receipt};
 use crate::trust::{PublicKey, document, read_trust};
@@ -62,6 +65,7 @@ fn dispatch(op: &str, outer: &Value) -> Result<Object, Reason> {
         "inclusion" => op_inclusion(outer),
         "consistency" => op_consistency(outer),
         "mandate_history" => op_mandate_history(outer),
+        "mandate_record" => op_mandate_record(outer),
         "chain" => op_chain(outer),
         "bundle" => op_bundle(outer),
         _ => Err(Reason::UnknownOp),
@@ -410,6 +414,76 @@ fn op_mandate_history(outer: &Value) -> Result<Object, Reason> {
         ("uses", Value::Array(uses)),
         ("close", close),
     ]))
+}
+
+fn totals_value(t: &Totals) -> Value {
+    let mut f = alloc::vec![("uses", int(t.uses))];
+    if let Some(a) = t.amount {
+        f.push(("amount", int(a)));
+    }
+    Value::Object(obj(f))
+}
+
+/// One use or close record on its own: its shape, Clavis's signature and, for a use with `app`,
+/// the App's JWT. The chain and the scope need the grant and the other records (`mandate_history`).
+fn op_mandate_record(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let doc = document(outer.get("record"))?;
+    let app = match outer.get("app") {
+        None | Some(Value::Null) => None,
+        Some(a) => Some(a.as_str().ok_or(Reason::InputMalformed)?),
+    };
+    let digest = record_digest(&doc);
+    match doc.get("type").and_then(Value::as_str) {
+        Some(MANDATE_USE_1) => {
+            let u = parse_use(&doc).ok_or(Reason::MandateUseShape)?;
+            if !verify_sigs(&trust, &doc) {
+                return Err(Reason::MandateAttestSignature);
+            }
+            if let Some(app) = app {
+                verify_app_jwt(&u.jwt, &u.key, app, &u.request, u.at)?;
+            }
+            let use_id = u
+                .request
+                .value
+                .get("use")
+                .cloned()
+                .ok_or(Reason::MandateUseShape)?;
+            Ok(obj(alloc::vec![
+                ("type", Value::from(MANDATE_USE_1)),
+                ("digest", Value::from(digest.as_str())),
+                ("grant", Value::from(u.grant.as_str())),
+                ("mandate", Value::from(u.request.mandate.as_str())),
+                ("seq", int(u.seq)),
+                ("use", use_id),
+                ("operation", Value::from(u.request.operation.as_str())),
+                ("request", Value::from(digest_of(&u.request.value).as_str())),
+                ("jwt", Value::from(u.jwt.as_str())),
+                ("at", int(u.at)),
+                ("totals", totals_value(&u.totals)),
+            ]))
+        }
+        Some(MANDATE_CLOSE_1) => {
+            let c = parse_close(&doc).ok_or(Reason::MandateCloseShape)?;
+            if !verify_sigs(&trust, &doc) {
+                return Err(Reason::MandateAttestSignature);
+            }
+            Ok(obj(alloc::vec![
+                ("type", Value::from(MANDATE_CLOSE_1)),
+                ("digest", Value::from(digest.as_str())),
+                ("grant", Value::from(c.grant.as_str())),
+                ("mandate", Value::from(c.mandate.as_str())),
+                ("reason", Value::from(c.reason.as_str())),
+                ("uses", int(c.uses)),
+                (
+                    "last",
+                    c.last.as_deref().map_or(Value::Null, Value::from),
+                ),
+                ("at", int(c.at)),
+            ]))
+        }
+        _ => Err(Reason::MandateRecordType),
+    }
 }
 
 fn op_chain(outer: &Value) -> Result<Object, Reason> {

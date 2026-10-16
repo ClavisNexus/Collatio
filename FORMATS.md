@@ -184,6 +184,7 @@ The records keep their pre-genesis shapes (`mandate.terms@1`, `mandate.use_reque
 - The app's JWT (`app.jwt`, compact JWS) is checked as before: `EdDSA` with an OKP key or `ES256` with an EC key; `iss` = `app:<app>`, `app_id` = `<app>`, `aud` = `clavis-ledger`, `body_sha256` = hex(SHA-256(UTF-8(JCS(request)))), and `iat` − 30 ≤ `at` ≤ `exp` + 30. The header and payload are read by the strict reader (a repeated key is refused) and `iat`, `exp` must be integers; the pre-genesis reader took any JSON number and let a repeated key win.
 - The first use's totals must start from nothing. The pre-genesis check compared totals only with the use before, so a first use could claim an amount already spent; Collatio refuses it (`mandate_totals`).
 - The `mandate_history` operation reads `trust`, `grant` (the receipt string), `terms` (string), `uses` (strings in `seq` order) and `close` (string, optional). It checks the grant receipt fully (§4), then the terms against the grant's `terms`, then each use against the one before, then the close against the last use.
+- The `mandate_record` operation reads `trust` and one `record` (a use or a close), and `app` (optional). It checks the record's shape, Clavis's signature and, for a use with `app`, the app's JWT, and answers the record's members (a use's request as its digest). It does not check the chain or the scope, which need the grant and the other records; an app reads a use this way right after making it and checks the whole history with `mandate_history`.
 
 ## 8. Event chains
 

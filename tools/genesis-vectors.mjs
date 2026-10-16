@@ -923,6 +923,38 @@ no("mandate_history: close for another grant", historyCall({ close: closeRecord(
 no("mandate_history: close signed by another key", historyCall({ close: closeRecord({}, { key: otherMaster }) }), "mandate_attest_signature");
 no("mandate_history: close@2 is gone", historyCall({ close: closeRecord({ type: "mandate.close@2" }) }), "mandate_close_shape");
 
+// one record on its own (the App reads a use right after making it, without the history)
+const recordCall = (record, over = {}) => ({ op: "mandate_record", trust: trust(over.trust), record: JSON.stringify(record), ...("app" in over ? { app: over.app } : { app: APP }) });
+ok("mandate_record: a use", recordCall(use2), {
+  type: "mandate.use@1",
+  digest: recordDigest(use2),
+  grant: GRANT,
+  mandate: MANDATE_ID,
+  seq: 2,
+  use: use2.request.use,
+  operation: "book",
+  request: digestOf(use2.request),
+  jwt: use2.app.jwt,
+  at: IAT + 200,
+  totals: { uses: 2, amount: 20000 },
+});
+ok("mandate_record: a close", recordCall(close), {
+  type: "mandate.close@1",
+  digest: recordDigest(close),
+  grant: GRANT,
+  mandate: MANDATE_ID,
+  reason: "revoked_by_holder",
+  uses: 2,
+  last: recordDigest(use2),
+  at: IAT + 500,
+});
+ok("mandate_record: a use without an app does not read the JWT", recordCall(useRecord(1, null, { jwt: { payload: { app_id: "other-app" } } }), { app: null }), { seq: 1 });
+no("mandate_record: a use for another app", recordCall(useRecord(1, null, { jwt: { payload: { app_id: "other-app" } } })), "mandate_app_jwt_app");
+no("mandate_record: signed by the receipt key", recordCall(useRecord(1, null, { sign: { key: signReceipt, kid: KEYS.signReceipt.kid } })), "mandate_attest_signature");
+no("mandate_record: close signed by another key", recordCall(closeRecord({}, { key: otherMaster })), "mandate_attest_signature");
+no("mandate_record: a terms document", recordCall(terms), "mandate_record_type");
+no("mandate_record: a use with an old member", recordCall({ ...use1, extra: 1 }), "mandate_use_shape");
+
 // ---------------------------------------------------------------- event chains
 
 function content(seq, over = {}) {

@@ -58,6 +58,7 @@ FORMATS.md describes the documents.
 | `inclusion` | `index`, `size`, `leaf_hash`, `proof`, `root` | nothing more |
 | `consistency` | `first`, `second`, `first_root`, `second_root`, `proof` | nothing more |
 | `mandate_history` | `trust`, `grant` (a receipt string, holder or app), `terms`, `uses` (strings in `seq` order), `close` (string, optional) | `grant` (`type`, `mandate`, `app`, `request`, `on_behalf` or null), `terms`, `uses` (`seq`, `operation`, `at`, `totals`), `close` (`reason`, `at`, `uses`, or null) |
+| `mandate_record` | `trust`, `record` (one use or close record string), `app` (optional; the App the use's JWT must name) | `type`, `digest` (the record's digest), `grant`, `mandate`; for a use: `seq`, `use`, `operation`, `request` (the request's digest), `jwt`, `at`, `totals`; for a close: `reason`, `uses`, `last`, `at` |
 | `chain` | `trust`, `events` (skeleton strings in `seq` order), `from` (digest or null), `contents` (optional `{ seq, content }`), `snapshot` (optional string) | `actor`, `first`, `last`, `head`, `opened` (`seq`, `change`, `at`), `snapshot` (its `seq`, or null) |
 | `bundle` | `trust`, `evidence` (a `ledger.bundle@1` string) | `log`, `index`, `committed_by`, `opening`, `anchor` (`anchored_by`, `tsa`, or null) |
 
@@ -198,3 +199,4 @@ Reasons are only added, never renamed or reused.
 | `bundle_inclusion` | The inclusion proof does not lead to the checkpoint root. |
 | `bundle_opening` | The opening does not give the leaf's commitment. |
 | `bundle_anchor` | The anchor checkpoint is not the same host's `anchor` or does not include the checkpoint. |
+| `mandate_record_type` | The record is neither a `mandate.use@1` nor a `mandate.close@1`. |
