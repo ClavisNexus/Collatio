@@ -10,7 +10,7 @@
     ".": { "types": "./collatio.d.ts", "default": "./collatio.mjs" },
     "./collatio.wasm": "./collatio.wasm"
   },
-  "files": ["collatio.mjs", "collatio.d.ts", "collatio.wasm"],
+  "files": ["collatio.mjs", "collatio.d.ts", "collatio.wasm", "THIRD-PARTY-NOTICES.md"],
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test test/*.test.mjs"

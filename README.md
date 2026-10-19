@@ -52,4 +52,4 @@ The toolchain is pinned in `rust-toolchain.toml` and dependencies in `Cargo.lock
 
 ## License
 
-MIT
+MIT. `collatio.wasm` also contains the Rust crates listed, with their licenses, in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) (shipped in the npm package). After changing dependencies, run `cargo fetch --target wasm32v1-none` and `node tools/third-party-notices.mjs`.
