@@ -8,7 +8,11 @@ Collatio is one WebAssembly module, named by the SHA-256 of its bytes. Clavis, t
 
 ## Status
 
-Under construction; nothing is released. Done so far:
+The reference module, from `repro/run.sh`, is `sha256:knnwNOIOIHDFLS8Gp7UsnnFjlneACn4I5NLCkl-mTvI`. `@clavis.nexus/collatio` 1.0.1 ships that module. It is not on the registry yet.
+
+`v1.0.0` (`go/v1.0.0` on the same commit) recorded `sha256:FPh2AxvhGnU5XiO69qivINTC7WGW_4_IzW_iPOdGyKc`. `repro/run.sh` does not reproduce that file.
+
+Done so far:
 
 - the strict JSON reader (unique keys, no lone surrogates, depth limit), RFC 8785 canonical form, Base64URL, digests and the envelope challenge, checked byte for byte against the Clavis TypeScript implementation they replace (`vectors/pregenesis`);
 - the method `webauthn@1` (COSE keys for ES256 and EdDSA, authenticator data, `clientDataJSON`, the origin rule), checked against the TypeScript implementation on 900 real and mutated assertions;
@@ -21,7 +25,7 @@ Under construction; nothing is released. Done so far:
 
 - the JavaScript host (`js/`, npm `@clavis.nexus/collatio`, no dependencies) and the Go host (`go/`, `github.com/clavisnexus/collatio/go` on wazero). Both pass the same conformance scenarios (`conformance/hosts-1.json`: ABI version and export checks, recovery after a trap, replacing an instance over its memory limit, running only catalog-listed unrevoked modules, following a revoked verifier to its successor, marking a stale catalog) and give the 142 answers above.
 
-Released as `v1.0.0` (the Go module as `go/v1.0.0`); `collatio.wasm` of that release is `sha256:FPh2AxvhGnU5XiO69qivINTC7WGW_4_IzW_iPOdGyKc`. Not yet: publishing to npm, the aggregated chain head `state.heads@1` and CI.
+The aggregated chain head `state.heads@1` is specified when aggregation is built.
 
 Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node tools/check-release-age.mjs`).
 
@@ -49,6 +53,16 @@ repro/run.sh   # the reference build; needs Docker
 ```
 
 The toolchain is pinned in `rust-toolchain.toml` and dependencies in `Cargo.lock`. Released modules are built with `repro/run.sh`, on any host.
+
+## Publish
+
+`js/` is the registry package. Tag the commit `vX.Y.Z` and `go/vX.Y.Z` first. The catalog records `vX.Y.Z`. `npm publish` runs `prepack`, which packs the module only when `repro/run.sh` has left two matching files.
+
+```bash
+node tools/check-release-age.mjs
+repro/run.sh
+cd js && npm publish
+```
 
 ## License
 
