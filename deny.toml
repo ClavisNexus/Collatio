@@ -1,0 +1,22 @@
+# cargo deny check
+# Every target is checked, not only wasm32v1-none: Cargo.lock is shared with the host builds.
+
+[advisories]
+db-urls = ["https://github.com/rustsec/advisory-db"]
+yanked = "deny"
+
+[licenses]
+# The licenses tools/third-party-notices.mjs ships under, plus Unicode-3.0 for unicode-ident,
+# which only runs at build time (proc-macro2, syn).
+allow = ["MIT", "BSL-1.0", "BSD-3-Clause", "Unicode-3.0"]
+confidence-threshold = 0.8
+
+[bans]
+wildcards = "deny"
+multiple-versions = "warn"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

@@ -3,33 +3,85 @@ name: ci
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "23 0 * * *"
+
+permissions:
+  contents: read
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # rustup comes with the runner image; this installs what rust-toolchain.toml names.
       - name: Install the pinned Rust toolchain
         run: |
-          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- -y --default-toolchain none
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          "$HOME/.cargo/bin/rustup" show
-      - uses: actions/setup-node@v4
+          rustup toolchain install --no-self-update
+          rustup target add wasm32v1-none
+          rustup show
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 20
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: "1.25.x"
+          go-version-file: go/go.mod
+          cache: false
       - run: node tools/check-release-age.mjs
       - run: cargo test --locked
       - run: ./build.sh
       - run: npm test
         working-directory: js
+      - run: go mod download && go mod verify
+        working-directory: go
       - run: go test ./...
         working-directory: go
 
-  repro:
+  audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: |
+          rustup toolchain install --no-self-update
+          rustup show
+      - name: Install cargo-deny 0.20.2
+        run: |
+          curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail \
+            --output "$RUNNER_TEMP/cargo-deny.tar.gz" \
+            https://github.com/EmbarkStudios/cargo-deny/releases/download/0.20.2/cargo-deny-0.20.2-x86_64-unknown-linux-musl.tar.gz
+          echo "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f  $RUNNER_TEMP/cargo-deny.tar.gz" | sha256sum --check --strict
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf "$RUNNER_TEMP/cargo-deny.tar.gz" -C "$RUNNER_TEMP/bin" --strip-components=1 cargo-deny-0.20.2-x86_64-unknown-linux-musl/cargo-deny
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - run: cargo deny --locked check
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go/go.mod
+          cache: false
+      - run: go mod download && go mod verify
+        working-directory: go
+      - run: GOTOOLCHAIN=auto go mod download && GOTOOLCHAIN=auto go mod verify
+        working-directory: tools
+      # Build for the runner; GOOS below must change only what is scanned, not the scanner.
+      - run: GOTOOLCHAIN=auto go build -o "$RUNNER_TEMP/govulncheck" golang.org/x/vuln/cmd/govulncheck
+        working-directory: tools
+      - run: '"$RUNNER_TEMP/govulncheck" ./...'
+        working-directory: go
+
+  repro:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: repro/run.sh

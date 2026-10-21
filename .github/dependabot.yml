@@ -1,0 +1,33 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    # tools/check-release-age.mjs fails CI on crates published less than 14 days ago.
+    cooldown:
+      default-days: 14
+
+  - package-ecosystem: gomod
+    directory: /go
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  # Every requirement in tools/go.mod is marked indirect, so name the tool explicitly.
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    allow:
+      - dependency-name: golang.org/x/vuln
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
