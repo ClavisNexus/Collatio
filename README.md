@@ -56,13 +56,18 @@ The toolchain is pinned in `rust-toolchain.toml` and dependencies in `Cargo.lock
 
 ## Publish
 
-`js/` is the registry package. Tag the commit `vX.Y.Z` and `go/vX.Y.Z` first. The catalog records `vX.Y.Z`. `npm publish` runs `prepack`, which packs the module only when `repro/run.sh` has left two matching files.
+`js/` is the registry package, published from `.github/workflows/publish.yml` through npm trusted publishing; no npm token is used. The catalog records `vX.Y.Z`.
 
-```bash
-node tools/check-release-age.mjs
-repro/run.sh
-cd js && npm publish
-```
+1. On `main`, raise `version` in `js/package.json` and the digest in `js/README.md` if the module changed.
+2. Tag that commit `go/vX.Y.Z` and `vX.Y.Z`, and push `go/vX.Y.Z` first.
+
+   ```bash
+   git tag go/v1.0.2 && git tag v1.0.2
+   git push origin go/v1.0.2 && git push origin v1.0.2
+   ```
+
+3. The workflow runs the crate age check, the tests and the reference build, packs the module only when `repro/run.sh` has left two matching files and the packed README names it, and stages the package on npm.
+4. Check that the commit in the run's summary is on `main`, and that the integrity of the `stage` job matches the one npmjs.com shows under Staged Packages. Then approve it there with 2FA. The trusted publisher on npm allows staging only.
 
 ## License
 
