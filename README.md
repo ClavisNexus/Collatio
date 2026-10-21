@@ -8,7 +8,7 @@ Collatio is one WebAssembly module, named by the SHA-256 of its bytes. Clavis, t
 
 ## Status
 
-The reference module, from `repro/run.sh`, is `sha256:knnwNOIOIHDFLS8Gp7UsnnFjlneACn4I5NLCkl-mTvI`. `@clavis.nexus/collatio` 1.0.1 ships that module and is on the npm registry.
+The reference module, from `repro/run.sh`, is `sha256:knnwNOIOIHDFLS8Gp7UsnnFjlneACn4I5NLCkl-mTvI`. `@clavis.nexus/collatio` ships that module from 1.0.1.
 
 `v1.0.0` (`go/v1.0.0` on the same commit) recorded `sha256:FPh2AxvhGnU5XiO69qivINTC7WGW_4_IzW_iPOdGyKc`. `repro/run.sh` does not reproduce that file.
 
