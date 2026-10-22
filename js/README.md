@@ -10,7 +10,7 @@ This package ships `collatio.wasm` `sha256:knnwNOIOIHDFLS8Gp7UsnnFjlneACn4I5NLCk
 npm install @clavis.nexus/collatio
 ```
 
-Requires Node.js 20 or newer. Where a build step compiles the module ahead of time (Cloudflare Workers), pass that compiled module to `Collatio.load`.
+Requires Node.js 24 or newer. Where a build step compiles the module ahead of time (Cloudflare Workers), pass that compiled module to `Collatio.load`.
 
 ## Use
 

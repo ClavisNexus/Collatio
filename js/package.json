@@ -11,7 +11,7 @@
   },
   "files": ["collatio.mjs", "collatio.d.ts", "collatio.wasm", "THIRD-PARTY-NOTICES.md", "LICENSE", "README.md"],
   "publishConfig": { "access": "public" },
-  "engines": { "node": ">=20" },
+  "engines": { "node": ">=24" },
   "scripts": {
     "prepack": "node ../tools/prepare-npm.mjs",
     "test": "node --test test/*.test.mjs"
