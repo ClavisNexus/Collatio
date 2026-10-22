@@ -58,8 +58,8 @@ The toolchain is pinned in `rust-toolchain.toml` and dependencies in `Cargo.lock
 
 `js/` is the registry package, published from `.github/workflows/publish.yml` through npm trusted publishing; no npm token is used. The catalog records `vX.Y.Z`.
 
-1. On `main`, raise `version` in `js/package.json` and the digest in `js/README.md` if the module changed.
-2. Tag that commit `go/vX.Y.Z` and `vX.Y.Z`, and push `go/vX.Y.Z` first.
+1. Through a pull request to `main`, raise `version` in `js/package.json` and the digest in `js/README.md` if the module changed.
+2. Once its checks on `main` have passed, tag the merged commit `go/vX.Y.Z` and `vX.Y.Z`, and push `go/vX.Y.Z` first.
 
    ```bash
    git tag go/v1.0.2 && git tag v1.0.2
