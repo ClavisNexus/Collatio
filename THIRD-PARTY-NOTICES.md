@@ -228,7 +228,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ```
 
-## crypto-bigint 0.7.5
+## crypto-bigint 0.7.10
 
 License: Apache-2.0 OR MIT (used under MIT)
 
@@ -292,7 +292,7 @@ IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 ```
 
-## ctutils 0.4.2
+## ctutils 0.4.6
 
 License: Apache-2.0 OR MIT (used under MIT)
 
