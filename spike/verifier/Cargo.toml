@@ -4,7 +4,7 @@ version = "0.0.0"
 edition = "2024"
 publish = false
 license = "MIT"
-description = "Measurement spike for the Collatio verifier (genesis.md §18.10). Not the verifier."
+description = "Measurement spike for the Collatio verifier. Not the verifier."
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -19,7 +19,7 @@ base64ct = { version = "=1.8.3", default-features = false, features = ["alloc"] 
 ryu-js = { version = "=1.0.3", default-features = false }
 dlmalloc = { version = "=0.2.14", default-features = false, features = ["global"] }
 ed25519-dalek = { version = "=3.0.0", default-features = false }
-# Compile-only probes for §18.10 item 7 (ASN.1 certificates, CBOR). Off by default.
+# Compile-only probes for item 7 of spike/README.md (ASN.1 certificates, CBOR). Off by default.
 x509-cert = { version = "=0.3.0", default-features = false, optional = true }
 minicbor = { version = "=2.3.0", default-features = false, features = ["alloc"], optional = true }
 

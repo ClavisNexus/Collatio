@@ -1,5 +1,5 @@
 {
- "note": "Reference answers from the Clavis TypeScript evidence code before genesis (evidence-pregenesis): JSON.parse then jcs, digestOf and envelopeChallenge. Regenerate with packages/shared/scripts/collatio-vectors.mts in the Clavis Nexus repository.",
+ "note": "Reference answers from the Clavis TypeScript evidence code before genesis: JSON.parse, then the canonical form, the digest and the envelope challenge.",
  "cases": [
   {
    "text": " [\n{ }\t] ",

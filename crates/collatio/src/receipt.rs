@@ -1,4 +1,4 @@
-//! Receipts (FORMATS.md §4, genesis.md §5.3–§5.4): the core fixed by the signer's proof, the
+//! Receipts (FORMATS.md §4): the core fixed by the signer's proof, the
 //! attestations that vouch for it (`accepted@1`, `ledger.receipt@1`), and the disclosures that
 //! open ledger leaves (`key.opening@1`). An attestation or disclosure of an unknown type is passed
 //! over unread; a known one that fails refuses the receipt.

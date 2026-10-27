@@ -1,5 +1,5 @@
 {
- "note": "Reference answers from the Clavis TypeScript ledger code before genesis: signed notes (verifyLedgerNote), checkpoint and receipt bodies, leaves and RFC 9162 proofs. Keys are random. Regenerate with packages/shared/scripts/collatio-vectors.mts.",
+ "note": "Reference answers from the Clavis TypeScript ledger code before genesis: signed notes, checkpoint and receipt bodies, leaves and RFC 9162 proofs. Keys are random.",
  "notes": [
   {
    "note": "clavis.ledger.receipt/v1\nclavis.nexus/ledger/first-party.1\n15718\nvG5VxtEyu0HGJMBA5UsfDoGZDJQ9EQYWU50mWRFg2wQ=\n\n— clavis-ledger-log-k7mq hWzbKiTuLq8CGAlK2nzIbVHvUn9gHJ5+1V/dQWFO6hnPjBQiVPNMawMwzjiiOGnTS31JmgyQdktGUyZ/iTlRchqb1wE=\n",

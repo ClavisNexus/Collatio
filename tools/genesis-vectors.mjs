@@ -1113,7 +1113,7 @@ no(
   "json_duplicate_key",
 );
 
-// The app receipt's anchor as a host checks it online (genesis.md §7.4): a first-party checkpoint that covers
+// The app receipt's anchor as a host checks it online: a first-party checkpoint that covers
 // index 42, then the inclusion proof from the anchor's leaf hash to that checkpoint's root.
 {
   const leaves = Array.from({ length: 43 }, (_, i) => (i === 42 ? leafHash(appAnchor) : leafHash(hex(bytes(`first-party.0 leaf ${i}`)))));

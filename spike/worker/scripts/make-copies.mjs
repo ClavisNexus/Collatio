@@ -1,4 +1,4 @@
-// Writes N distinct copies of a verifier for the multi-verifier Worker (§18.10 item 9).
+// Writes N distinct copies of a verifier for the multi-verifier Worker (item 9 of spike/README.md).
 // Each copy gets a custom section `collatio-spike-copy` holding its index, so the bytes and
 // hashes differ while behavior does not (custom sections are ignored by the engine).
 //   node spike/worker/scripts/make-copies.mjs [count] [source.wasm]

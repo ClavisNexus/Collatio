@@ -1,8 +1,8 @@
 # Collatio spike
 
-A small verifier built only to measure what public information does not tell us before writing Collatio (Nexus `docs/architecture/genesis.md` §18.10). It is not the verifier and nothing depends on it.
+A small verifier built only to measure what public information does not tell us before writing Collatio. It is not the verifier and nothing depends on it.
 
-It verifies P-256 ECDSA, Ed25519 and RSASSA-PKCS1-v1_5 (RSA on `crypto-bigint`, not the `rsa` crate, §18.8), formats numbers the RFC 8785 way, and exposes `collatio-abi@1` (§18.3) so the hosts can be reused.
+It verifies P-256 ECDSA, Ed25519 and RSASSA-PKCS1-v1_5 (RSA on `crypto-bigint`, not the `rsa` crate), formats numbers the RFC 8785 way, and exposes `collatio-abi@1` (`ABI.md`) so the hosts can be reused.
 
 | Path | |
 |---|---|
@@ -37,7 +37,7 @@ Local on 2026-10-14; Workers (the spike Worker on a `workers.dev` route, one `me
 
 Toolchain: rustc 1.95.0 (pinned by `verifier/rust-toolchain.toml`), Node 22, Go 1.27.1, wazero 1.12.0, wrangler 4.89.0.
 
-| Item (§18.10) | Result |
+| Item | Result |
 |---|---|
 | 7. Crates on `wasm32v1-none` `no_std` | Build: `p256` 0.14.0, `sha2` 0.11.1, `crypto-bigint` 0.7.5, `ed25519-dalek` 3.0.0, `serde_json` 1.0.154 (`alloc`), `base64ct` 1.8.3, `ryu-js` 1.0.3, `dlmalloc` 0.2.14 (`global`); probe: `x509-cert` 0.3.0, `minicbor` 2.3.0. `cms` exists only as 0.3.0-rc.0 for this `der` line, so TSA tokens (CMS SignedData) would be parsed with `der`/`x509-cert` directly. `p256` precomputed tables need `critical-section` or `std`, so they are off; P-256 verification is therefore slower than Ed25519 |
 | 1. Size | base 295,137 B (gzip 115,648); probe 359,181 B (gzip 132,734). Deployed: 295.31 KiB / gzip 116.81 KiB |

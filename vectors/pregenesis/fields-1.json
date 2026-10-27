@@ -1,5 +1,5 @@
 {
- "note": "Reference answers from fieldFromKind before genesis: whether a kind string reads, and whether a value (a JSON text) has the kind. Collatio reads the same kinds the same way and adds the kind org; it is stricter only where FORMATS.md says (integers written with a fraction or exponent, non-canonical bytes32). Regenerate with packages/shared/scripts/collatio-vectors.mts.",
+ "note": "Reference answers from the Clavis TypeScript field reader before genesis: whether a kind string reads, and whether a value (a JSON text) has the kind. Collatio reads the same kinds the same way and adds the kind org; it is stricter only where FORMATS.md says (integers written with a fraction or exponent, non-canonical bytes32).",
  "kinds": [
   {
    "kind": "digest",

@@ -11,7 +11,7 @@ use crate::json::Value;
 
 pub const REGISTRY_1: &str = "registry@1";
 
-/// The longest `aud` (genesis.md §5.2: a 253-character domain after `domain:`).
+/// The longest `aud` (a 253-character domain after `domain:`).
 pub const MAX_AUD: usize = 260;
 const MAX_WRITER: usize = 32;
 

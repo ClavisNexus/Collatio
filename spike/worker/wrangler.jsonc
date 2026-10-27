@@ -1,4 +1,4 @@
-// Spike only (genesis.md §18.10). No routes, bindings, secrets or keys. Delete after measuring:
+// Spike only (spike/README.md). No routes, bindings, secrets or keys. Delete after measuring:
 //   wrangler delete --config spike/worker/wrangler.jsonc
 {
   "name": "clavis-collatio-spike",
