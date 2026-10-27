@@ -1,6 +1,6 @@
 # Formats
 
-The byte-level formats Collatio verifies from Clavis genesis on. They follow the Clavis design (genesis.md); the points this document settled beyond it were confirmed on 2026-10-15. Formats that genesis does not change (RFC 8785, digests, the envelope challenge, `webauthn@1`, `shown@1`, key records, commitments, signed notes, leaves, Merkle proofs, TSA tokens) are implemented and described in the code.
+The byte-level formats Collatio verifies from Clavis genesis on. They follow the Clavis design; the points this document settled beyond it were confirmed on 2026-10-15. Formats that genesis does not change (RFC 8785, digests, the envelope challenge, `webauthn@1`, `shown@1`, key records, commitments, signed notes, leaves, Merkle proofs, TSA tokens) are implemented and described in the code.
 
 ## 0. Conventions
 
@@ -31,7 +31,7 @@ Unchanged from the current design except `aud`.
 
 The WebAuthn challenge is SHA-256(UTF-8(`suite`) ‖ 0x00 ‖ UTF-8(JCS(envelope))).
 
-- The writers at genesis are `account`, `org`, `domain`, `document` and `request` (genesis.md §5.2). They are named by the registry's templates, not listed in Collatio: the envelope only requires `<writer>` to be `[a-z][a-z0-9_]{0,31}` and something after the colon. So a new writer is a registry change, not a module release.
+- The writers at genesis are `account`, `org`, `domain`, `document` and `request`. They are named by the registry's templates, not listed in Collatio: the envelope only requires `<writer>` to be `[a-z][a-z0-9_]{0,31}` and something after the colon. So a new writer is a registry change, not a module release.
 - An extension Collatio knows (`shown@1`) is checked whether or not `crit` names it. An unknown one is not read; when `crit` names it, the receipt is refused (`extension_unknown`).
 
 ## 2. Statements and `registry@1`
@@ -149,7 +149,7 @@ The current `platform.sealer.nominate` document, signed by the Master:
 
 ### 5.3 `catalog@1`
 
-As in the design (§10.1), signed by the sealer:
+Signed by the sealer:
 
 ```jsonc
 { "type": "catalog@1", "issued_at": 1791747761, "sealer": { …nomination… },
@@ -166,13 +166,13 @@ As in the design (§10.1), signed by the sealer:
 
 ## 6. Operations
 
-ABI.md lists the operations, what each reads and answers, and the reasons. As in the design (§18.3), the caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
+ABI.md lists the operations, what each reads and answers, and the reasons. The caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
 
 ## 7. Delegation records
 
 The records keep their pre-genesis shapes (`mandate.terms@1`, `mandate.use_request@1`, `mandate.use@1`) and rules (the scope check, totals, the chain of uses). What changes:
 
-- `mandate.close@1` takes the reasons `account_closed`, `exhausted`, `expired`, `revoked_by_app`, `revoked_by_holder` and `signer_designation_ended`. The last is allowed only when the grant is `mandate.grant.on_behalf@1`. `mandate.close@2` is gone (genesis.md §5.5).
+- `mandate.close@1` takes the reasons `account_closed`, `exhausted`, `expired`, `revoked_by_app`, `revoked_by_holder` and `signer_designation_ended`. The last is allowed only when the grant is `mandate.grant.on_behalf@1`. `mandate.close@2` is gone.
 - The grant is a receipt (holder or app) whose statement is a grant type. Grant types are rules of the module:
 
 | Grant | Reads | |
@@ -188,7 +188,7 @@ The records keep their pre-genesis shapes (`mandate.terms@1`, `mandate.use_reque
 
 ## 8. Event chains
 
-Account and Org state are chains of skeletons (genesis.md §19.2). A skeleton links and commits; the content is kept apart and may be deleted.
+Account and Org state are chains of skeletons. A skeleton links and commits; the content is kept apart and may be deleted.
 
 ```jsonc
 { "type": "event@1", "actor": "eu1.Q2xh…", "seq": 42, "prev": "sha256:…", "commit": "sha256:…",
@@ -199,7 +199,7 @@ Account and Org state are chains of skeletons (genesis.md §19.2). A skeleton li
 - `attest`: Ed25519 over UTF-8(JCS(skeleton without `attest`)) by a JWKS key in slot `state-attest`. The skeleton's digest is `digestOf(skeleton without attest)`; the next skeleton's `prev` is that digest. `alg` is `EdDSA`, the JOSE name the JWKS key carries.
 - Content (`event.content@1`), kept by the writer as `{ salt, change, at, payload, receipt }`: `salt` 32 bytes Base64URL; `change` a type ID; `at` Unix seconds; `payload` an object; `receipt` the holder receipt string when the signer's receipt caused the change, else null. `commit` = `sha256:` + Base64URL(SHA-256(UTF-8(`clavis.event.v1`) ‖ salt ‖ UTF-8(JCS({ type: "event.content@1", change, at, payload, receipt })))).
 - Snapshot (`state.snapshot@1`): `{ type, actor, seq, head, state, attest }`: the state after event `seq`, whose skeleton digest is `head`, signed like a skeleton.
-- Head leaf (`state.head@1`): c = hex(SHA-256(UTF-8(`clavis.commit.v1`) ‖ salt ‖ UTF-8(JCS({ type: "state.head@1", seq, head })))). The aggregated head (`state.heads@1`) is specified when aggregation is built (genesis.md §19.4: when leaves grow).
+- Head leaf (`state.head@1`): c = hex(SHA-256(UTF-8(`clavis.commit.v1`) ‖ salt ‖ UTF-8(JCS({ type: "state.head@1", seq, head })))). The aggregated head (`state.heads@1`) is specified when aggregation is built, once leaves grow.
 - The `chain` operation reads `trust`, `events` (skeleton strings in `seq` order), `from` (the digest before the first skeleton, or null when it starts at 1), `contents` (optional `{ seq, content }` with content strings) and `snapshot` (optional string). It checks every signature and link, opens the contents given, and checks the snapshot against the skeleton at its `seq`.
 
 ## 9. Ledger evidence bundle (`ledger.bundle@1`)

@@ -1,4 +1,4 @@
-//! The method `webauthn@1` (signing-layers §6).
+//! The method `webauthn@1`.
 //!
 //! The challenge is the envelope challenge ([`crate::challenge`]). The proof is
 //! `{ credential, authenticator_data, client_data_json, signature }` and the key is
@@ -170,7 +170,7 @@ pub fn origin_belongs_to_rp(origin: &str, rp: &str) -> bool {
     host_ok && !rp.is_empty() && (host == rp || host.ends_with(&format!(".{rp}")))
 }
 
-/// Checks the proof over the envelope with the key (genesis.md §5.4 step 3).
+/// Checks the proof over the envelope with the key.
 pub fn verify_webauthn1(
     envelope: &Value,
     proof: &Value,

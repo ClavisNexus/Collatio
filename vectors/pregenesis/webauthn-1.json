@@ -1,5 +1,5 @@
 {
- "note": "Reference answers from the Clavis TypeScript method webauthn@1 before genesis (WEBAUTHN_1_SUITE.verify, no origin allowlist). Regenerate with packages/shared/scripts/collatio-vectors.mts; keys and signatures are random.",
+ "note": "Reference answers from the Clavis TypeScript method webauthn@1 before genesis (no origin allowlist). Keys and signatures are random.",
  "cases": [
   {
    "envelope": {
