@@ -228,6 +228,7 @@ pub fn der_to_raw_ecdsa(der: &[u8]) -> Option<[u8; 64]> {
 }
 
 /// Checks `signature` over `data` with the key. A malformed key or signature is a failed check.
+/// ES256 signatures are DER, as WebAuthn carries them.
 pub fn verify_signature(key: &CoseKey, signature: &[u8], data: &[u8]) -> bool {
     match key {
         CoseKey::Es256 { x, y } => {
@@ -258,6 +259,33 @@ pub fn verify_signature(key: &CoseKey, signature: &[u8], data: &[u8]) -> bool {
             };
             vk.verify_strict(data, &sig).is_ok()
         }
+    }
+}
+
+/// Checks `signature` over `data` using the bytes as carried. They are not re-encoded.
+///
+/// ES256 is raw r‖s (64 bytes), not DER. Ed25519 is the 64-byte signature.
+pub fn verify_carried_signature(key: &CoseKey, signature: &[u8], data: &[u8]) -> bool {
+    match key {
+        CoseKey::Es256 { x, y } => {
+            use p256::ecdsa::signature::Verifier;
+            use p256::ecdsa::{Signature, VerifyingKey};
+            if signature.len() != 64 {
+                return false;
+            }
+            let mut sec1 = Vec::with_capacity(65);
+            sec1.push(0x04);
+            sec1.extend_from_slice(x);
+            sec1.extend_from_slice(y);
+            let (Ok(vk), Ok(sig)) = (
+                VerifyingKey::from_sec1_bytes(&sec1),
+                Signature::from_slice(signature),
+            ) else {
+                return false;
+            };
+            vk.verify(data, &sig).is_ok()
+        }
+        CoseKey::EdDsa { .. } => verify_signature(key, signature, data),
     }
 }
 

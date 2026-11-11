@@ -86,8 +86,9 @@ The current definition plus `verifier` and `registry`; 14 members:
 
 - **Core**: every member except `attestations` and `disclosures`. The subject of an attestation is `digestOf(core)`.
 - `attestations`: 1–8 objects; `disclosures` (holder only, optional): 1–8 objects. Each has a `type` that is a type ID. An attestation or disclosure of an unknown type is passed over unread; a known one that fails refuses the receipt.
-- Order of checks, so a receipt gets one reason: shape, envelope, dimension (digest, catalog), registry, statement, `aud`, extensions, receipt kind, the caller's expectations, the proof, disclosures, attestations.
+- Order of checks for `receipt@1` and `receipt.app@1`, so a receipt gets one reason: shape, envelope, dimension (digest, catalog), registry, statement, `aud`, extensions, receipt kind, the caller's expectations, the proof, disclosures, attestations.
 - Required: at least one valid `accepted@1`, and a valid `ledger.receipt@1` for the receipt anchor.
+- `receipt@2` (§4.4) is another holder receipt. It does not change `receipt@1` or `receipt.app@1`.
 
 ### 4.1 `accepted@1`
 
@@ -119,6 +120,39 @@ The current definition plus `verifier` and `registry`; 14 members:
 - The commitment of `{salt, record}` (`clavis.commit.v1`) is a leaf covered by one of the receipt's `ledger.receipt@1`.
 - The record binds the receipt's key: same `credential`, `public_key` and `alg`; same `rp` as the envelope; and, for `account` dimensions, the same `signer`.
 - At most one `key.opening@1` per receipt (a receipt has one key).
+
+### 4.4 `receipt@2`
+
+A holder receipt. The `receipt` operation accepts it beside `receipt@1`. Exact members:
+
+```jsonc
+{ "type": "receipt@2",
+  "statement": { "type": "<non-empty string>", … },
+  "envelope": { … }, "proof": { … }, "key": { "cose": "…" }, "dimension": { … },
+  "attestations": [ … ], "disclosures": [ { "type": "key.chain@1", … } ] }
+```
+
+- **statement**: an object whose `type` is a non-empty string. Other members are part of the object the envelope digests; they are not given field rules here.
+- **envelope**, exact members:
+
+| Member | |
+|---|---|
+| `statement` | Digest of `statement` |
+| `entity` | Digest. It is not compared with another document |
+| `signer` | Non-empty string |
+| `rp` | Non-empty string |
+| `aud` | Starts with `entity:` and has at least one character after it |
+| `suite` | `webauthn.relayed@1` |
+| `dimension` | Digest of `dimension` |
+| `iat` | A safe integer (no fraction, no exponent, within ±(2^53 − 1)) |
+
+- **proof**, exact members, each canonical Base64URL: `authenticator_data`, `client_data_json`, `signature`. The signature is checked with the COSE key in `key.cose` over the decoded `authenticator_data` ‖ SHA-256(decoded `client_data_json`). The authenticator data is at least 33 bytes, and the flag byte (the 33rd) has the WebAuthn user-present bit (`0x01`) and the user-verified bit (`0x04`). An ES256 signature is 64 raw bytes, r‖s, not DER. An Ed25519 signature is 64 bytes. The signature bytes are verified as carried; they are not re-encoded. `client_data_json` is not read as JSON here.
+- **key**: exactly `{ "cose": "<canonical Base64URL>" }`. The key is a COSE ES256 or Ed25519 public key, as elsewhere.
+- **dimension**, exact members: `type` `dimension@2`, non-empty string `name`, digest `verifier`, digest `registry`, and object `statements`. `statements` has a member whose name is the statement's `type`. That member is the dimension floor. Floors are not evaluated. `verifier` and `registry` are not looked up in the catalog.
+- **attestations**: 2 or 3 objects. One `accepted@1`, checked as in §4.1, whose `subject` is the digest of `{ type, statement, envelope, proof, key, dimension }`. One `ledger.receipt@1`, checked as in §4.2, for the receipt anchor `{ v: 1, c }` with c = hex(SHA-256(UTF-8(JCS({ type: "receipt.anchor@1", envelope: digestOf(envelope), proof: digestOf(proof) })))). An optional `rp.claim@1` may be the third. Its `type` is required; the claim is not verified, and it is not an anchor. Any other attestation type refuses the receipt.
+- **disclosures**: one object whose `type` is `key.chain@1`. Other members may be present. This verifier requires the type and does not recompute the key map.
+- Order of checks: receipt shape, statement, envelope, statement digest, dimension, dimension digest, the statement type listed in `statements`, the caller's expectations, the proof, the disclosure, the attestations.
+- A failure uses a reason that already names that failure (`receipt_type` when the type is not a holder or app receipt this operation reads, `receipt_shape` for a bad receipt shape, `envelope_shape`, `suite_unknown`, `aud`, `statement_digest`, `dimension_shape`, `dimension_digest`, `statement_not_in_dimension`, the proof reasons, `disclosure_shape`, `attestation_shape`, and the accepted and ledger reasons).
 
 ## 5. Trust
 
