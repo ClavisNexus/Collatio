@@ -1,6 +1,7 @@
 //! Receipts (FORMATS.md §4): the core fixed by the signer's proof, the attestations that vouch
 //! for it (`accepted@1`, `ledger.receipt@1`), and the disclosures that open ledger leaves
-//! (`key.opening@1`) or name a key chain (`key.chain@1` on `receipt@2`). On `receipt@1` and
+//! (`key.opening@1`) or carry a key chain (`key.chain@1` on `receipt@2`, read as bundles and a
+//! head proof). On `receipt@1` and
 //! `receipt.app@1`, an attestation or disclosure of an unknown type is passed over unread; a
 //! known one that fails refuses the receipt. `receipt@2` names the types it accepts.
 
@@ -8,6 +9,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::b64;
+use crate::chain_check::{self, ChainExpect};
 use crate::commit::{commitment, to_hex};
 use crate::cose::{parse_cose_key, verify_carried_signature};
 use crate::digest::{digest_of, is_digest, is_type_id, sha256};
@@ -33,7 +35,6 @@ pub const RECEIPT_ANCHOR_1: &str = "receipt.anchor@1";
 
 const DIMENSION_2: &str = "dimension@2";
 const RELAYED_1: &str = "webauthn.relayed@1";
-const KEY_CHAIN_1: &str = "key.chain@1";
 const RP_CLAIM_1: &str = "rp.claim@1";
 /// WebAuthn authenticator-data flag bits: user present, user verified.
 const UP: u8 = 0x01;
@@ -609,19 +610,18 @@ fn verify_relayed_proof(proof: &Value, key: &Value) -> Result<(), Reason> {
     Ok(())
 }
 
-/// A `key.chain@1` disclosure. Only the type is required; the map is not recomputed.
-fn check_key_chain(v: &Value) -> Result<(), Reason> {
-    let list = v.as_array().ok_or(Reason::DisclosureShape)?;
-    if list.len() != 1 {
-        return Err(Reason::DisclosureShape);
-    }
-    let o = list
-        .first()
-        .and_then(Value::as_object)
-        .ok_or(Reason::DisclosureShape)?;
-    if o.get("type").and_then(Value::as_str) != Some(KEY_CHAIN_1) {
-        return Err(Reason::DisclosureShape);
-    }
+/// A `key.chain@1` disclosure. The bundles and the head proof are read (FORMATS.md §4.5).
+fn check_key_chain(trust: &Trust, v: &Value, entity: &str) -> Result<(), Reason> {
+    let parts = chain_check::disclosure_parts(v)?;
+    chain_check::read_chain(
+        trust,
+        parts,
+        ChainExpect {
+            entity,
+            handle: None,
+            event: None,
+        },
+    )?;
     Ok(())
 }
 
@@ -719,7 +719,15 @@ fn verify_holder_receipt2(
     let proof = o.get("proof").ok_or(Reason::ReceiptShape)?;
     let key = o.get("key").ok_or(Reason::ReceiptShape)?;
     verify_relayed_proof(proof, key)?;
-    check_key_chain(o.get("disclosures").ok_or(Reason::DisclosureShape)?)?;
+    let entity = envelope
+        .get("entity")
+        .and_then(Value::as_str)
+        .ok_or(Reason::EnvelopeShape)?;
+    check_key_chain(
+        trust,
+        o.get("disclosures").ok_or(Reason::DisclosureShape)?,
+        entity,
+    )?;
 
     let list = o
         .get("attestations")

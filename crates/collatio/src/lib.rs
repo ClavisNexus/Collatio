@@ -19,6 +19,7 @@ extern crate alloc;
 pub mod b64;
 pub mod bundle;
 pub mod chain;
+pub mod chain_check;
 pub mod challenge;
 pub mod commit;
 pub mod cose;
