@@ -52,7 +52,7 @@ FORMATS.md describes the documents.
 |---|---|---|
 | `trust` | `trust` | `instance`, `sealer`, `issued_at`, `keys` (`kid`, `slot`, `alg`), `logs`, `verifiers`, `revoked`, `registries`, `dimensions` |
 | `proof` | `envelope`, `proof`, `key` (JSON strings) | `origin`, `counter`, `alg`, `backup_eligible`, `backed_up` |
-| `receipt` | `trust`, `evidence` (`receipt@1` or `receipt@2`), `expect` (optional; only `statement`, `aud`, `signer`) | `type` (that receipt's type), `statement`, `envelope`, `dimension` (`digest`, `name`, `verifier`, `registry`, and `signer` when the dimension names one), `accepted` (`kid`, `at`), `anchor` (`log`, `index`, `origin`, `leaf_hash`), `key_record` (`log`, `index`, `origin`, `leaf_hash`, `at`, or null), `key` (the receipt's key), and, for `receipt@1`, the `proof` answer |
+| `receipt` | `trust`, `evidence`, `expect` (optional; only `statement`, `aud`, `signer`) | `type`, `statement`, `envelope`, `dimension` (`digest`, `name`, `verifier`, `registry`, `signer`), `accepted` (`kid`, `at`), `anchor` (`log`, `index`, `origin`, `leaf_hash`), `key_record` (`log`, `index`, `origin`, `leaf_hash`, `at`, or null), `key` (the receipt's key), and the `proof` answer |
 | `app_receipt` | as `receipt`, and `holder_proof` (optional JSON string) | as `receipt`, without `key_record`, `key` and the `proof` answer |
 | `ledger_note` | `trust`, `note` | `log`, `kid`, `body` (`kind` `receipt` with `origin`, `index`, `leaf_hash`; or `checkpoint` with `origin`, `size`, `root`, `time`) |
 | `inclusion` | `index`, `size`, `leaf_hash`, `proof`, `root` | nothing more |
@@ -114,8 +114,8 @@ Reasons are only added, never renamed or reused.
 | `statement_digest` | The envelope names another statement. |
 | `statement_not_in_dimension` | The dimension does not accept the statement type. |
 | `suite_not_in_dimension` | The dimension does not accept the method. |
-| `suite_unknown` | The module does not know the method (`webauthn@1` on `receipt@1`; `webauthn.relayed@1` on `receipt@2`). |
-| `aud` | The envelope's `aud` is not the one the receipt requires (the registry template for `receipt@1`; an `entity:` audience for `receipt@2`). |
+| `suite_unknown` | The module does not know the method. |
+| `aud` | The envelope's `aud` is not the one the registry template gives. |
 | `extension_required` | An extension the dimension requires is missing. |
 | `extension_not_allowed` | The envelope has an extension the dimension does not allow. |
 | `extension_unknown` | `crit` names an extension the module does not know. |
@@ -140,7 +140,7 @@ Reasons are only added, never renamed or reused.
 | `proof_public_key` | The key is not a COSE key the module reads. |
 | `proof_signature` | The signature does not verify. |
 | `proof_key_alg` | The COSE key's algorithm differs from the key's `alg`. |
-| `attestation_shape` | `attestations` is not 1 to 8 objects with a type. On `receipt@2`, not 2 or 3 objects: one `accepted@1`, one `ledger.receipt@1`, and optionally one `rp.claim@1`. |
+| `attestation_shape` | `attestations` is not 1 to 8 objects with a type. |
 | `accepted_shape` | An `accepted@1` does not have its shape. |
 | `accepted_subject` | An `accepted@1` vouches for another core. |
 | `accepted_key` | No `sign-receipt` key in the JWKS has the `accepted@1` kid. |
@@ -150,7 +150,7 @@ Reasons are only added, never renamed or reused.
 | `ledger_receipt_log` | A `ledger.receipt@1` is from a log other than a first-party shard. |
 | `ledger_receipt_leaf` | A `ledger.receipt@1` covers a leaf the receipt cannot compute. |
 | `anchor_missing` | No `ledger.receipt@1` covers the receipt anchor. |
-| `disclosure_shape` | `disclosures` is not 1 to 8 objects with a type. On `receipt@2`, not one `key.chain@1`. |
+| `disclosure_shape` | `disclosures` is not 1 to 8 objects with a type. |
 | `key_opening_shape` | A `key.opening@1` does not have its shape, or there are two. |
 | `key_opening_binding` | The key record does not bind the receipt's key, rp or signer. |
 | `key_opening_unanchored` | No `ledger.receipt@1` covers the key record. |

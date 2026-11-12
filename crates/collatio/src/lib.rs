@@ -45,9 +45,6 @@ pub mod tsa_registry;
 pub mod webauthn;
 pub mod x509;
 
-#[cfg(test)]
-mod receipt2_tests;
-
 mod ops;
 pub use ops::{MAX_INPUT, run};
 
