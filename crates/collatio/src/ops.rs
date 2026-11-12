@@ -10,8 +10,7 @@ use alloc::vec::Vec;
 
 use crate::bundle::verify_bundle;
 use crate::chain::verify_chain;
-use crate::chain_check::{ChainExpect, ChainParts, read_chain};
-use crate::digest::{digest_of, is_digest};
+use crate::digest::digest_of;
 use crate::envelope::parse_envelope;
 use crate::jcs::canonical;
 use crate::json::{self, Number, Object, Value};
@@ -22,7 +21,7 @@ use crate::mandate::{
     read_grant, record_digest, verify_app_jwt, verify_close, verify_sigs, verify_use,
 };
 use crate::reason::Reason;
-use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_2, RECEIPT_APP_1, verify_receipt};
+use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_APP_1, verify_receipt};
 use crate::trust::{PublicKey, document, read_trust};
 use crate::webauthn::{WebauthnOk, verify_webauthn1};
 
@@ -68,7 +67,6 @@ fn dispatch(op: &str, outer: &Value) -> Result<Object, Reason> {
         "mandate_history" => op_mandate_history(outer),
         "mandate_record" => op_mandate_record(outer),
         "chain" => op_chain(outer),
-        "chain_check" => op_chain_check(outer),
         "bundle" => op_bundle(outer),
         _ => Err(Reason::UnknownOp),
     }
@@ -238,26 +236,26 @@ fn op_receipt(outer: &Value, kind: Kind) -> Result<Object, Reason> {
             ("at", int(r.at)),
         ])),
     };
-    // `receipt@1` and `receipt.app@1` keep the type they had. A holder `receipt@2` reports its own.
-    let receipt_type = match (kind, evidence.get("type").and_then(Value::as_str)) {
-        (Kind::Holder, Some(RECEIPT_2)) => RECEIPT_2,
-        (Kind::Holder, _) => RECEIPT_1,
-        (Kind::App, _) => RECEIPT_APP_1,
-    };
-    let mut dimension = obj(alloc::vec![
-        ("digest", Value::from(v.dimension_digest.as_str())),
-        ("name", Value::from(v.dimension.name.as_str())),
-        ("verifier", Value::from(v.dimension.verifier.as_str())),
-        ("registry", Value::from(v.dimension.registry.as_str())),
-    ]);
-    if let Some(signer) = v.dimension.signer {
-        dimension.insert(String::from("signer"), Value::from(signer.as_str()));
-    }
     let mut fields = alloc::vec![
-        ("type", Value::from(receipt_type)),
+        (
+            "type",
+            Value::from(match kind {
+                Kind::Holder => RECEIPT_1,
+                Kind::App => RECEIPT_APP_1,
+            })
+        ),
         ("statement", v.statement.clone()),
         ("envelope", v.envelope.clone()),
-        ("dimension", Value::Object(dimension)),
+        (
+            "dimension",
+            Value::Object(obj(alloc::vec![
+                ("digest", Value::from(v.dimension_digest.as_str())),
+                ("name", Value::from(v.dimension.name.as_str())),
+                ("verifier", Value::from(v.dimension.verifier.as_str())),
+                ("registry", Value::from(v.dimension.registry.as_str())),
+                ("signer", Value::from(v.dimension.signer.as_str())),
+            ])),
+        ),
         ("accepted", Value::Array(accepted)),
         (
             "anchor",
@@ -477,7 +475,10 @@ fn op_mandate_record(outer: &Value) -> Result<Object, Reason> {
                 ("mandate", Value::from(c.mandate.as_str())),
                 ("reason", Value::from(c.reason.as_str())),
                 ("uses", int(c.uses)),
-                ("last", c.last.as_deref().map_or(Value::Null, Value::from),),
+                (
+                    "last",
+                    c.last.as_deref().map_or(Value::Null, Value::from),
+                ),
                 ("at", int(c.at)),
             ]))
         }
@@ -526,136 +527,6 @@ fn op_chain(outer: &Value) -> Result<Object, Reason> {
         ("head", Value::from(ok.head.as_str())),
         ("opened", Value::Array(opened)),
         ("snapshot", ok.snapshot.map_or(Value::Null, int)),
-    ]))
-}
-
-fn exact_keys(o: &Object, keys: &[&str]) -> bool {
-    o.len() == keys.len() && keys.iter().all(|k| o.get(k).is_some())
-}
-
-fn nullable_str<'a>(v: Option<&'a Value>) -> Result<Option<&'a str>, Reason> {
-    match v {
-        Some(Value::Null) => Ok(None),
-        Some(value) => Ok(Some(value.as_str().ok_or(Reason::InputMalformed)?)),
-        None => Err(Reason::InputMalformed),
-    }
-}
-
-fn opt_text(text: &Option<String>) -> Value {
-    match text {
-        None => Value::Null,
-        Some(text) => Value::from(text.as_str()),
-    }
-}
-
-/// `chain_check` (FORMATS.md §4.5). `chain` still reads `event@1`.
-fn op_chain_check(outer: &Value) -> Result<Object, Reason> {
-    let trust = read_trust(outer.get("trust"))?;
-    let chain = outer
-        .get("chain")
-        .and_then(Value::as_object)
-        .ok_or(Reason::InputMalformed)?;
-    if !exact_keys(chain, &["entity_events", "head", "handle_events", "keys"]) {
-        return Err(Reason::InputMalformed);
-    }
-    let entity_events = chain
-        .get("entity_events")
-        .and_then(Value::as_array)
-        .ok_or(Reason::InputMalformed)?;
-    let head = chain.get("head").ok_or(Reason::InputMalformed)?;
-    if !matches!(head, Value::String(_) | Value::Object(_)) {
-        return Err(Reason::InputMalformed);
-    }
-    let handle_events = match chain.get("handle_events") {
-        Some(Value::Null) => None,
-        Some(value) => Some(value.as_array().ok_or(Reason::InputMalformed)?),
-        None => return Err(Reason::InputMalformed),
-    };
-    let keys = match chain.get("keys") {
-        Some(Value::Null) => None,
-        Some(value @ (Value::String(_) | Value::Object(_))) => Some(value),
-        Some(_) | None => return Err(Reason::InputMalformed),
-    };
-    let expect = outer
-        .get("expect")
-        .and_then(Value::as_object)
-        .ok_or(Reason::InputMalformed)?;
-    if !exact_keys(expect, &["entity", "handle", "event"]) {
-        return Err(Reason::InputMalformed);
-    }
-    let entity = expect
-        .get("entity")
-        .and_then(Value::as_str)
-        .ok_or(Reason::InputMalformed)?;
-    if !is_digest(entity) {
-        return Err(Reason::InputMalformed);
-    }
-    let handle = nullable_str(expect.get("handle"))?;
-    if handle.is_some_and(str::is_empty) {
-        return Err(Reason::InputMalformed);
-    }
-    let event = nullable_str(expect.get("event"))?;
-    if event.is_some_and(|text| !is_digest(text)) {
-        return Err(Reason::InputMalformed);
-    }
-    let ok = read_chain(
-        &trust,
-        ChainParts {
-            entity_events,
-            head,
-            handle_events,
-            keys,
-        },
-        ChainExpect {
-            entity,
-            handle,
-            event,
-        },
-    )?;
-    let handle = match ok.handle {
-        None => Value::Null,
-        Some(handle) => Value::from(handle.as_str()),
-    };
-    let last_seq = match ok.last_seq {
-        None => Value::Null,
-        Some(seq) => int(seq),
-    };
-    let event = match ok.event {
-        None => Value::Null,
-        Some(event) => Value::Object(obj(alloc::vec![
-            ("seq", int(event.seq)),
-            ("log", Value::from(event.log.as_str())),
-            ("index", uint(event.index)),
-            ("key", Value::from(event.key.as_str())),
-        ])),
-    };
-    let keys = ok
-        .keys
-        .iter()
-        .map(|key| {
-            let unbound_at = match key.unbound_at {
-                None => Value::Null,
-                Some(at) => int(at),
-            };
-            Value::Object(obj(alloc::vec![
-                ("key", Value::from(key.key.as_str())),
-                ("by", Value::from(key.by.as_str())),
-                ("method", opt_text(&key.method)),
-                ("rp", opt_text(&key.rp)),
-                ("use", Value::from(key.use_for.as_str())),
-                ("bound_at", int(key.bound_at)),
-                ("unbound_at", unbound_at),
-                ("reason", opt_text(&key.reason)),
-            ]))
-        })
-        .collect();
-    Ok(obj(alloc::vec![
-        ("handle", handle),
-        ("last_seq", last_seq),
-        ("event", event),
-        ("keys", Value::Array(keys)),
-        ("covers", int(ok.covers)),
-        ("as_of", int(ok.as_of)),
     ]))
 }
 
