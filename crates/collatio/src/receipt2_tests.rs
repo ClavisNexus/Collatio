@@ -18,7 +18,6 @@ enum Fault {
     Proof,
     Subject,
     Leaf,
-    Disclosure,
 }
 
 fn scalar(last: u8) -> [u8; 32] {
@@ -126,7 +125,7 @@ fn receipt_note(secret: &[u8; 32], index: u64, leaf: &[u8; 32]) -> String {
     )
 }
 
-pub(crate) fn trust_value(sealer: [u8; 32], receipt_key: [u8; 32], ledger: &[u8; 32]) -> Value {
+fn trust_value(sealer: [u8; 32], receipt_key: [u8; 32], ledger: &[u8; 32]) -> Value {
     let sealer_jwk = ec_jwk(sealer, "sealer");
     let payload = obj(vec![
         ("v", number("1")),
@@ -377,11 +376,10 @@ fn sample(fault: Fault) -> (Value, Value) {
         ),
         (
             "disclosures",
-            Value::Array(vec![if matches!(fault, Fault::Disclosure) {
-                obj(vec![("type", Value::from("key.chain@1"))])
-            } else {
-                crate::chain_check::fixture::disclosure(&ledger, digest)
-            }]),
+            Value::Array(vec![obj(vec![
+                ("type", Value::from("key.chain@1")),
+                ("chain", Value::from("not-a-map")),
+            ])]),
         ),
     ]);
     (
@@ -458,9 +456,4 @@ fn receipt2_bad_accepted_subject() {
 #[test]
 fn receipt2_bad_anchor_leaf() {
     assert_eq!(refuse(Fault::Leaf), Reason::LedgerReceiptLeaf);
-}
-
-#[test]
-fn receipt2_type_only_disclosure() {
-    assert_eq!(refuse(Fault::Disclosure), Reason::DisclosureShape);
 }

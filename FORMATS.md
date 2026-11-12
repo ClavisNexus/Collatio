@@ -150,59 +150,9 @@ A holder receipt. The `receipt` operation accepts it beside `receipt@1`. Exact m
 - **key**: exactly `{ "cose": "<canonical Base64URL>" }`. The key is a COSE ES256 or Ed25519 public key, as elsewhere.
 - **dimension**, exact members: `type` `dimension@2`, non-empty string `name`, digest `verifier`, digest `registry`, and object `statements`. `statements` has a member whose name is the statement's `type`. That member is the dimension floor. Floors are not evaluated. `verifier` and `registry` are not looked up in the catalog.
 - **attestations**: 2 or 3 objects. One `accepted@1`, checked as in §4.1, whose `subject` is the digest of `{ type, statement, envelope, proof, key, dimension }`. One `ledger.receipt@1`, checked as in §4.2, for the receipt anchor `{ v: 1, c }` with c = hex(SHA-256(UTF-8(JCS({ type: "receipt.anchor@1", envelope: digestOf(envelope), proof: digestOf(proof) })))). An optional `rp.claim@1` may be the third. Its `type` is required; the claim is not verified, and it is not an anchor. Any other attestation type refuses the receipt.
-- **disclosures**: one `key.chain@1` object (§4.5). The verifier reads its bundles and its head proof. A disclosure that only names the type does not pass.
+- **disclosures**: one object whose `type` is `key.chain@1`. Other members may be present. This verifier requires the type and does not recompute the key map.
 - Order of checks: receipt shape, statement, envelope, statement digest, dimension, dimension digest, the statement type listed in `statements`, the caller's expectations, the proof, the disclosure, the attestations.
-- A failure uses a reason that already names that failure (`receipt_type` when the type is not a holder or app receipt this operation reads, `receipt_shape` for a bad receipt shape, `envelope_shape`, `suite_unknown`, `aud`, `statement_digest`, `dimension_shape`, `dimension_digest`, `statement_not_in_dimension`, the proof reasons, `disclosure_shape`, `entity_chain`, `key_chain`, `attestation_shape`, and the accepted and ledger reasons).
-
-### 4.5 `key.chain@1` and `chain_check`
-
-`receipt@2` carries one disclosure. `chain_check` reads the same chain without a receipt. The `chain` operation is unchanged: it still reads `event@1`.
-
-```jsonc
-{ "type": "key.chain@1",
-  "entity_events": [ "<ledger.bundle@1>", … ],
-  "head": "<map.proof@1>" | { …map.proof@1… },
-  "handle_events": [ "<ledger.bundle@1>", … ] | null,   // optional
-  "keys": "<map.proof@1>" | { …map.proof@1… } | null,   // optional
-  "closure": { … } | null,                              // optional; not read
-  "cosign": { … } | null }                              // optional; not read
-```
-
-- **entity_events**: one or more `ledger.bundle@1` strings (§9). Each bundle is verified, including the Merkle inclusion proof it carries. The opening's record is the event. An empty array, a bundle that does not verify, or a head proof that does not verify refuses with `entity_chain`.
-- **head**: a `map.proof@1`, as a JSON string or as an object.
-- **handle_events** and **keys** may be absent or null. When present, they are read the same way, and a failure refuses with `key_chain`. An empty `handle_events` array fails.
-- **closure** and **cosign** may be present. This verifier does not read them.
-- Other members refuse the disclosure (`disclosure_shape`).
-- An event record has integer `seq` (≥ 1) and `sigs`, objects with a digest `key`. The signing key is the `key` whose `role` is `event`, or the first `key` when none has that role. The event's digest is `digestOf` of the record without `sigs` and `approve`. A record that has `entity` must name the entity being checked. A record without `entity` stands for that entity when the record's digest is the entity's.
-- `handle`, `method` and `rp` on an event are strings or null. `handle_events` must carry `handle`.
-
-A `map.proof@1` is a JSON string or an object. Members besides `type` and `at` may be present.
-
-```jsonc
-{ "type": "map.proof@1",
-  "at": { "heads": "<ledger.bundle@1>" | { … },
-          "root": { "type": "map.root@1", "as_of": <ms>, "covers": <position> },
-          "value": { "type": "key.set@1", "keys": [ … ] } | null } }
-```
-
-- `heads` is a `ledger.bundle@1` string or object, verified as in §9. Its inclusion proof is the Merkle inclusion this crate already implements. This verifier does not fold a map path and does not define another hash.
-- `root.as_of` is an integer ≥ 0. The head proof's `root` also has integer `covers` ≥ 0. That `covers` is the answer's `covers`.
-- `value`, when present on the keys proof, is `key.set@1`. Each record in `keys` has digest `key`, non-empty `by` and `use`, integer `bound_at` ≥ 0, `unbound_at` (integer ≥ 0 or null) and `reason` (string or null). Other members may be present. The answer lists those records. When `handle_events` is null, each record's `method` and `rp` are null. Otherwise they are copied from the handle event whose `key` is that digest, or null when no handle event names it.
-- `as_of` in the answer is the keys proof's `as_of` when `keys` is present, and the head proof's `as_of` otherwise.
-
-`chain_check` reads `trust`, `chain` and `expect`:
-
-| Member | |
-|---|---|
-| `chain.entity_events` | The bundle strings |
-| `chain.head` | The head proof, string or object |
-| `chain.handle_events` | An array of bundle strings, or null |
-| `chain.keys` | A `map.proof@1`, string or object, or null |
-| `expect.entity` | A digest |
-| `expect.handle` | A non-empty string, or null |
-| `expect.event` | A digest, or null |
-
-The answer is `handle` (null when `handle_events` is null; otherwise the handle those events share, and `last_seq` is the last one's `seq`), `event` (null when `expect.event` is null; otherwise that event's `seq`, `log`, `index` and signing `key`), `keys`, `covers` and `as_of`. The event is taken from `entity_events` or `handle_events`. A named event that is not in the chain refuses with `chain_event`. When `expect.handle` is a string, `handle_events` must be that handle's bundles. On a receipt, the entity is the envelope's `entity`, and no handle or event is required.
+- A failure uses a reason that already names that failure (`receipt_type` when the type is not a holder or app receipt this operation reads, `receipt_shape` for a bad receipt shape, `envelope_shape`, `suite_unknown`, `aud`, `statement_digest`, `dimension_shape`, `dimension_digest`, `statement_not_in_dimension`, the proof reasons, `disclosure_shape`, `attestation_shape`, and the accepted and ledger reasons).
 
 ## 5. Trust
 
@@ -250,7 +200,7 @@ As in the design (§10.1), signed by the sealer:
 
 ## 6. Operations
 
-ABI.md lists the operations, what each reads and answers, and the reasons. `chain_check` is specified in §4.5. As in the design (§18.3), the caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
+ABI.md lists the operations, what each reads and answers, and the reasons. As in the design (§18.3), the caller builds the outside and passes evidence, trust documents and registries as the JSON strings it received: `{ "op": "receipt", "now": …, "expect": { … }, "trust": { "master": { …JWK… }, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>"] }, "evidence": "<string>" }`.
 
 ## 7. Delegation records
 
