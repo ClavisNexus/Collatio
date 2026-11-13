@@ -50,8 +50,7 @@ pub struct Dimension {
     pub suites: Vec<String>,
     pub verifier: String,
     pub registry: String,
-    /// `account` or `pairwise` for `dimension@1`. `dimension@2` does not name one.
-    pub signer: Option<Signer>,
+    pub signer: Signer,
     pub ext_required: Vec<String>,
     pub ext_allowed: Vec<String>,
     pub holder_receipts: bool,
@@ -138,7 +137,7 @@ pub fn parse_dimension(v: &Value) -> Option<Dimension> {
         suites,
         verifier: String::from(verifier),
         registry: String::from(registry),
-        signer: Some(signer),
+        signer,
         ext_required,
         ext_allowed,
         holder_receipts: receipts.iter().any(|r| r == "holder"),
@@ -162,7 +161,7 @@ mod tests {
     #[test]
     fn reads() {
         let d = parse_dimension(&doc("")).unwrap();
-        assert_eq!(d.signer, Some(Signer::Pairwise));
+        assert_eq!(d.signer, Signer::Pairwise);
         assert!(d.holder_receipts && d.app_receipts);
         assert!(parse_dimension(&doc(r#","x":1"#)).is_none());
     }

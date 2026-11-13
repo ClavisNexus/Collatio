@@ -21,7 +21,7 @@ use crate::mandate::{
     read_grant, record_digest, verify_app_jwt, verify_close, verify_sigs, verify_use,
 };
 use crate::reason::Reason;
-use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_2, RECEIPT_APP_1, verify_receipt};
+use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_APP_1, verify_receipt};
 use crate::trust::{PublicKey, document, read_trust};
 use crate::webauthn::{WebauthnOk, verify_webauthn1};
 
@@ -236,26 +236,26 @@ fn op_receipt(outer: &Value, kind: Kind) -> Result<Object, Reason> {
             ("at", int(r.at)),
         ])),
     };
-    // `receipt@1` and `receipt.app@1` keep the type they had. A holder `receipt@2` reports its own.
-    let receipt_type = match (kind, evidence.get("type").and_then(Value::as_str)) {
-        (Kind::Holder, Some(RECEIPT_2)) => RECEIPT_2,
-        (Kind::Holder, _) => RECEIPT_1,
-        (Kind::App, _) => RECEIPT_APP_1,
-    };
-    let mut dimension = obj(alloc::vec![
-        ("digest", Value::from(v.dimension_digest.as_str())),
-        ("name", Value::from(v.dimension.name.as_str())),
-        ("verifier", Value::from(v.dimension.verifier.as_str())),
-        ("registry", Value::from(v.dimension.registry.as_str())),
-    ]);
-    if let Some(signer) = v.dimension.signer {
-        dimension.insert(String::from("signer"), Value::from(signer.as_str()));
-    }
     let mut fields = alloc::vec![
-        ("type", Value::from(receipt_type)),
+        (
+            "type",
+            Value::from(match kind {
+                Kind::Holder => RECEIPT_1,
+                Kind::App => RECEIPT_APP_1,
+            })
+        ),
         ("statement", v.statement.clone()),
         ("envelope", v.envelope.clone()),
-        ("dimension", Value::Object(dimension)),
+        (
+            "dimension",
+            Value::Object(obj(alloc::vec![
+                ("digest", Value::from(v.dimension_digest.as_str())),
+                ("name", Value::from(v.dimension.name.as_str())),
+                ("verifier", Value::from(v.dimension.verifier.as_str())),
+                ("registry", Value::from(v.dimension.registry.as_str())),
+                ("signer", Value::from(v.dimension.signer.as_str())),
+            ])),
+        ),
         ("accepted", Value::Array(accepted)),
         (
             "anchor",
@@ -475,7 +475,10 @@ fn op_mandate_record(outer: &Value) -> Result<Object, Reason> {
                 ("mandate", Value::from(c.mandate.as_str())),
                 ("reason", Value::from(c.reason.as_str())),
                 ("uses", int(c.uses)),
-                ("last", c.last.as_deref().map_or(Value::Null, Value::from),),
+                (
+                    "last",
+                    c.last.as_deref().map_or(Value::Null, Value::from),
+                ),
                 ("at", int(c.at)),
             ]))
         }
