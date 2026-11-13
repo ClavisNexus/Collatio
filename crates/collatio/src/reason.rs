@@ -137,9 +137,6 @@ reasons! {
     BundleOpening => "bundle_opening",
     BundleAnchor => "bundle_anchor",
     MandateRecordType => "mandate_record_type",
-    EntityChain => "entity_chain",
-    KeyChain => "key_chain",
-    ChainEvent => "chain_event",
 }
 
 impl From<crate::json::JsonError> for Reason {
