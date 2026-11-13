@@ -8,7 +8,9 @@ Collatio is one WebAssembly module, named by the SHA-256 of its bytes. Clavis, t
 
 ## Status
 
-The reference module, from `repro/run.sh`, is `sha256:knnwNOIOIHDFLS8Gp7UsnnFjlneACn4I5NLCkl-mTvI`. `@clavis.nexus/collatio` ships that module from 1.0.1.
+The reference module, from `repro/run.sh`, is `sha256:wlXFoRaJ0patHXsdAwx3NRUqQB52gosZ77i2aQtf_HI`. `@clavis.nexus/collatio` ships that module from 1.0.3.
+
+`v1.0.1` and `v1.0.2` shipped `sha256:knnwNOIOIHDFLS8Gp7UsnnFjlneACn4I5NLCkl-mTvI`, built with `crypto-bigint` 0.7.5, which was later yanked.
 
 `v1.0.0` (`go/v1.0.0` on the same commit) recorded `sha256:FPh2AxvhGnU5XiO69qivINTC7WGW_4_IzW_iPOdGyKc`. `repro/run.sh` does not reproduce that file.
 
@@ -62,8 +64,8 @@ The toolchain is pinned in `rust-toolchain.toml` and dependencies in `Cargo.lock
 2. Once its checks on `main` have passed, tag the merged commit `go/vX.Y.Z` and `vX.Y.Z`, and push `go/vX.Y.Z` first.
 
    ```bash
-   git tag go/v1.0.2 && git tag v1.0.2
-   git push origin go/v1.0.2 && git push origin v1.0.2
+   git tag go/v1.0.3 && git tag v1.0.3
+   git push origin go/v1.0.3 && git push origin v1.0.3
    ```
 
 3. The workflow runs the crate age check, the tests and the reference build, packs the module only when `repro/run.sh` has left two matching files and the packed README names it, and stages the package on npm.

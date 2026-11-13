@@ -1,6 +1,6 @@
 {
   "name": "@clavis.nexus/collatio",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "The Collatio verifier for Clavis evidence: collatio.wasm and its JavaScript host.",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/ClavisNexus/Collatio.git", "directory": "js" },
