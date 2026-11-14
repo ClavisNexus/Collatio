@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Two independent linux/amd64 builds (no cache), compared with each other and with out/ (§18.10 item 6).
+# Two independent linux/amd64 builds (no cache), compared with each other and with out/ (item 6 of spike/README.md).
 #   spike/repro/run.sh
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -1,5 +1,5 @@
 {
- "note": "Reference answers from the Clavis TypeScript TSA verifier before genesis (verifyTimeStampToken with pkijs) on two real responses from 2026-10-11. Cases marked exact must give the same reason; flipped tokens must give the same verdict. Regenerate with packages/shared/scripts/collatio-vectors.mts.",
+ "note": "Reference answers from the Clavis TypeScript TSA verifier before genesis (on pkijs) on two real responses from 2026-10-11. Cases marked exact must give the same reason; flipped tokens must give the same verdict.",
  "probe_message": "clavis-tsa-probe",
  "cases": [
   {

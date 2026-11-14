@@ -1,5 +1,5 @@
 {
- "note": "Reference answers from the Clavis TypeScript code before genesis: text rules (isTrimmedText, isLine, hasNoAsciiUpper), shown@1, key records (parseKeyLogRecord) and commitments. Regenerate with packages/shared/scripts/collatio-vectors.mts.",
+ "note": "Reference answers from the Clavis TypeScript code before genesis: text rules, shown@1, key records and commitments.",
  "texts": [
   {
    "s": " a--",

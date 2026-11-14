@@ -1,4 +1,4 @@
-// Spike only (genesis.md §18.10 item 9). Run scripts/make-copies.mjs first. Delete after measuring:
+// Spike only (item 9 of spike/README.md). Run scripts/make-copies.mjs first. Delete after measuring:
 //   wrangler delete --config spike/worker/wrangler.multi.jsonc
 {
   "name": "clavis-collatio-spike-multi",

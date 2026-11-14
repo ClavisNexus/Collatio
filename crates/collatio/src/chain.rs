@@ -1,4 +1,4 @@
-//! Event chains (FORMATS.md §8, genesis.md §19.2): skeletons that link and commit, contents
+//! Event chains (FORMATS.md §8): skeletons that link and commit, contents
 //! that open the commitments, and snapshots of the state, all signed by a `state-attest` key.
 
 use alloc::string::String;

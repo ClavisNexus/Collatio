@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Measures the deployed spike Worker (genesis.md §18.10 items 1–4). Run by a person with
+# Measures the deployed spike Worker (items 1–4 of spike/README.md). Run by a person with
 # Cloudflare credentials, after deploying:
 #   wrangler deploy --config spike/worker/wrangler.jsonc        # note "Worker Startup Time" and "Total Upload"
 #   spike/worker/measure.sh https://clavis-collatio-spike.<subdomain>.workers.dev

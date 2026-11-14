@@ -33,7 +33,7 @@ pub enum Kind {
     Hex64,
     Domain,
     Email,
-    /// `<cell>.<UUID>` (genesis.md §4.2).
+    /// `<cell>.<UUID>` (FORMATS.md §2).
     Org,
     Text(usize),
     Int(i64, i64),
@@ -174,7 +174,7 @@ pub fn is_uuid(s: &str) -> bool {
         if is_hex(a, 8) && is_hex(b, 4) && is_hex(c, 4) && is_hex(d, 4) && is_hex(e, 12))
 }
 
-/// A cell ID: `[a-z]{2}[1-9][0-9]{0,2}` (genesis.md §4.1).
+/// A cell ID: `[a-z]{2}[1-9][0-9]{0,2}` (FORMATS.md §2).
 pub fn is_cell(s: &str) -> bool {
     let b = s.as_bytes();
     b.len() >= 3

@@ -1,7 +1,6 @@
-//! Differential check against the TypeScript evidence code before genesis (evidence-pregenesis,
-//! genesis.md §18.6): the same noisy texts must give the same canonical bytes, digests and
-//! challenges. The vectors are written by the Clavis Nexus repository
-//! (`packages/shared/scripts/collatio-vectors.mts`).
+//! Differential check against the Clavis TypeScript evidence code before genesis: the same noisy
+//! texts must give the same canonical bytes, digests and challenges. The vectors in
+//! `vectors/pregenesis` hold that code's answers.
 #![allow(
     clippy::unwrap_used,
     clippy::expect_used,

@@ -1,7 +1,7 @@
 //! RSASSA-PKCS1-v1_5 verification (RFC 8017 §8.2.2) on crypto-bigint.
 //!
 //! Public-key operation only, so variable time is fine. The `rsa` crate is not
-//! used (RUSTSEC-2023-0071, genesis.md §18.8).
+//! used (RUSTSEC-2023-0071).
 
 use alloc::vec::Vec;
 use crypto_bigint::modular::{BoxedMontyForm, BoxedMontyParams};
