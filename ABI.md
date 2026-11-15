@@ -95,6 +95,7 @@ Reasons are only added, never renamed or reused.
 | `json_lone_surrogate` | A document has a `\u` escape that leaves a lone surrogate. |
 | `json_non_finite` | A document has a number that reads as infinity. |
 | `json_too_deep` | A document nests arrays and objects more than 64 deep. |
+| `json_too_many_members` | An object in a document has more than 100000 members. |
 | `trust_master` | The Master key is not an EC P-256 public JWK. |
 | `trust_nomination` | The sealer nomination does not have its shape or the Master did not sign it. |
 | `trust_jwks` | The JWKS does not have its shape. |
