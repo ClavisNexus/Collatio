@@ -1,4 +1,4 @@
-// Replays vectors/answers.jsonl through wazero and compares answer bytes (§18.10 item 5).
+// Replays vectors/answers.jsonl through wazero and compares answer bytes (item 5 of spike/README.md).
 // The runtime is limited to WebAssembly 1.0 core features, which also checks that the
 // module stays inside what `wasm32v1-none` promises.
 //
@@ -120,7 +120,7 @@ func main() {
 	}
 	replayDur := time.Since(t1)
 
-	// Trap, then a fresh instance must answer again (§18.10 item 3).
+	// Trap, then a fresh instance must answer again (item 3).
 	_, trapErr := h.call(ctx, []byte(`{"op":"trap","input":{}}`))
 	_ = h.mod.Close(ctx)
 	h2, err := newHost(ctx, rt, compiled)

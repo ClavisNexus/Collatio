@@ -1,4 +1,4 @@
-//! The WebAuthn challenge for an envelope (signing-layers §5): SHA-256 of the UTF-8 of the
+//! The WebAuthn challenge for an envelope: SHA-256 of the UTF-8 of the
 //! method name, a 0x00 byte, and the UTF-8 of the envelope's canonical form. The method name
 //! separates methods, so the same envelope gives a different challenge under another method.
 

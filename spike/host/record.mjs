@@ -1,4 +1,4 @@
-// Records calls and the exact answer bytes from the JS host, for other hosts to replay (§18.10 item 5).
+// Records calls and the exact answer bytes from the JS host, for other hosts to replay (item 5 of spike/README.md).
 //   node spike/host/record.mjs > spike/vectors/answers.jsonl
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";

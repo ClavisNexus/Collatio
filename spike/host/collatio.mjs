@@ -1,4 +1,4 @@
-// Minimal JS host for collatio-abi@1 (genesis.md §18.3). Works in Node and Workers.
+// Minimal JS host for collatio-abi@1 (ABI.md). Works in Node and Workers.
 // The module has no imports, so instantiation takes an empty import object.
 
 const encoder = new TextEncoder();
@@ -27,7 +27,7 @@ export function instantiate(module) {
   };
 }
 
-/** A host that rebuilds its instance after a trap (§18.7: a trapped instance is not reused). */
+/** A host that rebuilds its instance after a trap (ABI.md §Trap: a trapped instance is not reused). */
 export function resilient(module) {
   let current = instantiate(module);
   let rebuilt = 0;

@@ -1,4 +1,4 @@
-//! `collatio-abi@1` exports (genesis.md §18.3).
+//! `collatio-abi@1` exports (ABI.md).
 //!
 //! - `abi_version() -> i32`: the spec says an i32 global, but Rust cannot
 //!   export a value global (a `static` exports its address), so the spike
@@ -12,7 +12,7 @@ mod exports {
     use alloc::alloc::{Layout, alloc as raw_alloc, dealloc};
     use alloc::vec::Vec;
 
-    /// Inputs above this are refused before parsing (§18.3).
+    /// Inputs above this are refused before parsing.
     const MAX_INPUT: usize = 4 * 1024 * 1024;
 
     #[unsafe(no_mangle)]

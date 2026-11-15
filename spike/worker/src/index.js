@@ -1,4 +1,4 @@
-// Spike Worker for genesis.md §18.10 items 1–4. Not bound to any route, resource or key.
+// Spike Worker for items 1–4 of spike/README.md. Not bound to any route, resource or key.
 //   GET /info                    abi_version, module bytes, memory
 //   GET /run?case=<c>&times=<n>  runs one case n times inside the verifier (CPU: compare n=1 and n=k)
 //   GET /trap                    traps, then answers again from a rebuilt instance

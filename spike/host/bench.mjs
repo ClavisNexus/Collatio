@@ -1,4 +1,4 @@
-// Timing in Node (V8), as the reference for the Workers numbers (§18.10 item 2).
+// Timing in Node (V8), as the reference for the Workers numbers (item 2 of spike/README.md).
 //   node spike/host/bench.mjs [wasm]
 // Writes vectors/bench.json on first run (fixed inputs reused by the Worker and Go hosts).
 import { existsSync, readFileSync, writeFileSync } from "node:fs";

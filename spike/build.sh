@@ -2,7 +2,7 @@
 # Builds the spike verifier and prints its SHA-256.
 #   spike/build.sh [base|probe]
 # Paths are remapped so panic locations do not carry the builder's home or registry path
-# (genesis.md §18.6: two independent builds must give the same hash).
+# (two independent builds must give the same hash).
 set -euo pipefail
 
 variant="${1:-base}"

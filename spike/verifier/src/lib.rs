@@ -1,8 +1,8 @@
-//! Collatio measurement spike (genesis.md §18.10).
+//! Collatio measurement spike (spike/README.md).
 //!
 //! Only what the spike measures: P-256 ECDSA verification, RSASSA-PKCS1-v1_5
-//! verification on crypto-bigint (§18.8), and the RFC 8785 number form.
-//! This is not the verifier. The ABI follows `collatio-abi@1` (§18.3) so that
+//! verification on crypto-bigint, and the RFC 8785 number form.
+//! This is not the verifier. The ABI follows `collatio-abi@1` (ABI.md) so that
 //! the hosts written for the spike can be reused.
 #![no_std]
 

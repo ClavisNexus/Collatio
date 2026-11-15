@@ -1,4 +1,4 @@
-// §18.10 items 3, 4, 5 and 8 in Node.
+// Items 3, 4, 5 and 8 of spike/README.md in Node.
 //   node spike/host/differential.mjs [path/to/collatio_spike.wasm]
 // - Wycheproof (RSA PKCS#1 v1.5 2048–8192, ECDSA P-256 DER and P1363): Collatio vs node:crypto vs expected.
 // - Random keys and mutated signatures: Collatio vs node:crypto.

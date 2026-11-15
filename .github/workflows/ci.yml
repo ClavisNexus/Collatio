@@ -31,6 +31,7 @@ jobs:
         with:
           go-version-file: go/go.mod
           cache: false
+      - run: node .github/public-surface.mjs
       - run: node tools/check-release-age.mjs
       - run: cargo test --locked
       - run: ./build.sh
