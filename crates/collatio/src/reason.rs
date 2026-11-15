@@ -32,6 +32,7 @@ reasons! {
     JsonLoneSurrogate => "json_lone_surrogate",
     JsonNonFinite => "json_non_finite",
     JsonTooDeep => "json_too_deep",
+    JsonTooManyMembers => "json_too_many_members",
     TrustMaster => "trust_master",
     TrustNomination => "trust_nomination",
     TrustJwks => "trust_jwks",
@@ -148,6 +149,7 @@ impl From<crate::json::JsonError> for Reason {
             JsonError::LoneSurrogate => Reason::JsonLoneSurrogate,
             JsonError::NonFinite => Reason::JsonNonFinite,
             JsonError::TooDeep => Reason::JsonTooDeep,
+            JsonError::TooManyMembers => Reason::JsonTooManyMembers,
         }
     }
 }

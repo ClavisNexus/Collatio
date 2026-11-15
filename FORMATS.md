@@ -4,7 +4,7 @@ The byte-level formats Collatio verifies from Clavis genesis on. They follow the
 
 ## 0. Conventions
 
-- **Reading.** Every Clavis document is read by the strict reader: UTF-8, unique keys, no lone surrogates, depth ≤ 64. Clavis types hold numbers only as integers within ±(2^53 − 1), written without fraction or exponent. App records inside bundles are arbitrary JSON and keep RFC 8785 numbers.
+- **Reading.** Every Clavis document is read by the strict reader: UTF-8, unique keys, no lone surrogates, depth ≤ 64, at most 100000 members per object. Clavis types hold numbers only as integers within ±(2^53 − 1), written without fraction or exponent. App records inside bundles are arbitrary JSON and keep RFC 8785 numbers.
 - **Canonical form.** RFC 8785. The digest of a value is `sha256:` + Base64URL(SHA-256(UTF-8(JCS(value)))).
 - **Type IDs.** `<name>@<version>`: dot-separated parts of `[a-z][a-z0-9_]*`, version ≥ 1 without leading zeros, ≤ 128 characters. A shape that changes gets a new version; a version is never reused.
 - **IDs.** `[A-Za-z0-9._~:@+=/-]{1,200}` unless stated.

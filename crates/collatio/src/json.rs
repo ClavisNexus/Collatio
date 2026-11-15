@@ -8,18 +8,23 @@
 //! - a `\u` escape never leaves a lone surrogate;
 //! - a number is kept as written and as the IEEE 754 double ECMAScript would read; a number that
 //!   reads as infinity is refused;
-//! - nesting is at most [`MAX_DEPTH`] deep.
+//! - nesting is at most [`MAX_DEPTH`] deep;
+//! - an object has at most [`MAX_OBJECT_MEMBERS`] members.
 //!
 //! Objects keep their members in input order. Whether a field may hold a number with a fraction
 //! is decided by the rules for that field, not here (see [`Number::as_safe_integer`]).
 
 use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 
 /// Deepest nesting of arrays and objects the reader accepts.
 pub const MAX_DEPTH: usize = 64;
+
+/// Most members one object may have. Keeps parse work bounded under the 4 MiB input cap.
+pub const MAX_OBJECT_MEMBERS: usize = 100_000;
 
 /// Largest integer every reader (including IEEE 754 doubles) represents exactly: 2^53 − 1.
 pub const MAX_SAFE_INTEGER: i64 = 9_007_199_254_740_991;
@@ -35,8 +40,20 @@ pub enum Value {
 }
 
 /// An object with unique keys, in input order.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct Object(Vec<(String, Value)>);
+///
+/// Members stay in the order they were inserted. A [`BTreeMap`] index makes each insert and
+/// lookup O(log n), so reading a large object is O(n log n) rather than O(n²).
+#[derive(Clone, Debug, Default)]
+pub struct Object {
+    members: Vec<(String, Value)>,
+    by_key: BTreeMap<String, usize>,
+}
+
+impl PartialEq for Object {
+    fn eq(&self, other: &Self) -> bool {
+        self.members == other.members
+    }
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Number {
@@ -58,6 +75,8 @@ pub enum JsonError {
     NonFinite,
     /// Arrays and objects nest deeper than [`MAX_DEPTH`].
     TooDeep,
+    /// An object has more than [`MAX_OBJECT_MEMBERS`] members.
+    TooManyMembers,
 }
 
 impl Number {
@@ -101,37 +120,46 @@ impl Number {
 
 impl Object {
     pub fn get(&self, key: &str) -> Option<&Value> {
-        self.0.iter().find(|(k, _)| k == key).map(|(_, v)| v)
+        let i = *self.by_key.get(key)?;
+        self.members.get(i).map(|(_, v)| v)
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.members.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.members.is_empty()
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&str, &Value)> {
-        self.0.iter().map(|(k, v)| (k.as_str(), v))
+        self.members.iter().map(|(k, v)| (k.as_str(), v))
     }
 
     pub fn keys(&self) -> impl Iterator<Item = &str> {
-        self.0.iter().map(|(k, _)| k.as_str())
+        self.members.iter().map(|(k, _)| k.as_str())
     }
 
     /// Adds a member. Returns false (and changes nothing) when the key is already present.
     pub fn insert(&mut self, key: String, value: Value) -> bool {
-        if self.0.iter().any(|(k, _)| *k == key) {
+        if self.by_key.contains_key(&key) {
             return false;
         }
-        self.0.push((key, value));
+        let i = self.members.len();
+        self.by_key.insert(key.clone(), i);
+        self.members.push((key, value));
         true
     }
 
     /// The members without the one named `key`.
     pub fn without(&self, key: &str) -> Object {
-        Object(self.0.iter().filter(|(k, _)| k != key).cloned().collect())
+        let mut out = Object::default();
+        for (k, v) in &self.members {
+            if k != key {
+                let _ = out.insert(k.clone(), v.clone());
+            }
+        }
+        out
     }
 }
 
@@ -294,6 +322,9 @@ impl Reader<'_> {
             self.expect(b':')?;
             self.skip_ws();
             let value = self.value(depth)?;
+            if object.len() >= MAX_OBJECT_MEMBERS {
+                return Err(JsonError::TooManyMembers);
+            }
             if !object.insert(key, value) {
                 return Err(JsonError::DuplicateKey);
             }
@@ -497,5 +528,59 @@ mod tests {
         assert_eq!(n("9007199254740992"), None);
         assert_eq!(n("1.0"), None);
         assert_eq!(n("1e2"), None);
+    }
+
+    fn object_with_n_keys(n: usize) -> String {
+        let mut out = String::with_capacity(n.saturating_mul(16).saturating_add(2));
+        out.push('{');
+        for i in 0..n {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push('"');
+            out.push_str(&alloc::format!("k{i}"));
+            out.push_str("\":1");
+        }
+        out.push('}');
+        out
+    }
+
+    #[test]
+    fn large_object_parses_in_reasonable_time() {
+        const N: usize = 10_000;
+        let json = object_with_n_keys(N);
+        let start = std::time::Instant::now();
+        let v = parse(json.as_bytes()).unwrap();
+        assert!(
+            start.elapsed().as_secs() < 2,
+            "10k-key object took {:?}",
+            start.elapsed()
+        );
+        let o = v.as_object().unwrap();
+        assert_eq!(o.len(), N);
+        assert_eq!(o.get("k0"), Some(&Value::Number(Number::from_parts("1", 1.0))));
+        assert_eq!(
+            o.get("k9999"),
+            Some(&Value::Number(Number::from_parts("1", 1.0)))
+        );
+    }
+
+    #[test]
+    fn refuses_too_many_members() {
+        let json = object_with_n_keys(MAX_OBJECT_MEMBERS.saturating_add(1));
+        assert_eq!(err(&json), JsonError::TooManyMembers);
+        let at_cap = object_with_n_keys(MAX_OBJECT_MEMBERS);
+        assert_eq!(
+            parse(at_cap.as_bytes()).unwrap().as_object().unwrap().len(),
+            MAX_OBJECT_MEMBERS
+        );
+    }
+
+    #[test]
+    fn keeps_input_order_and_rejects_duplicates() {
+        let v = parse(br#"{"z":1,"a":2,"m":3}"#).unwrap();
+        let keys: Vec<&str> = v.as_object().unwrap().keys().collect();
+        assert_eq!(keys, ["z", "a", "m"]);
+        assert_eq!(err(r#"{"a":1,"b":2,"a":3}"#), JsonError::DuplicateKey);
     }
 }
