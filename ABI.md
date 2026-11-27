@@ -61,6 +61,11 @@ FORMATS.md describes the documents.
 | `mandate_record` | `trust`, `record` (one use or close record string), `app` (optional; the App the use's JWT must name) | `type`, `digest` (the record's digest), `grant`, `mandate`; for a use: `seq`, `use`, `operation`, `request` (the request's digest), `jwt`, `at`, `totals`; for a close: `reason`, `uses`, `last`, `at` |
 | `chain` | `trust`, `events` (skeleton strings in `seq` order), `from` (digest or null), `contents` (optional `{ seq, content }`), `snapshot` (optional string) | `actor`, `first`, `last`, `head`, `opened` (`seq`, `change`, `at`), `snapshot` (its `seq`, or null) |
 | `bundle` | `trust`, `evidence` (a `ledger.bundle@1` string) | `log`, `index`, `committed_by`, `opening`, `anchor` (`anchored_by`, `tsa`, or null) |
+| `map_proof` | `trust`, `evidence` (a `map.proof@1` string), `expect_id` (optional agreement key), `at` (optional; the time asked about, Unix ms) | `log`, `map`, `key`, `seq`, `as_of`, `committed_by`, `anchored_by` (or null), `present`, `value` (the verified value, or null), `erased_since` and `swept_since` (with `before`), `state` with `thread` and `decision` (with `at`, for a series) |
+| `map_conflict` | `trust`, `first` and `second` (`map.proof@1` strings of one map), `between` (optional; `{ heads, root }` strings of roots in between) | `consistent`, `rule` (`c1`–`c5`, or null), `restored` |
+| `map_subtree` | `prefix` (`0` and `1` characters), `leaves` (`map.leaf@1` strings in key order) | `kind` (`empty`, `leaf`, `node`), `hash`, `count`, `log`, `map` (or null), `leaves` (the verified `id`, `value` and `index`) |
+| `map_combine` | `children` (2, 4, … or 256 `{ kind, hash, count }` in key order) | `kind`, `hash`, `count` |
+| `map_root` | `trust`, `evidence` (a `{ heads, root }` string: a root and the heads leaf that lists it), `subtree` (the whole map's `{ kind, hash, count }`, from `map_subtree` or `map_combine`) | `log`, `map`, `seq`, `as_of`, `committed_by`, `anchored_by` (or null), `erased_total`, `swept_total`, `count` (the subtree's) |
 
 `trust` is `{ "master": <JWK object>, "jwks": "<string>", "catalog": "<string>", "registries": ["<string>", …] }`. Hashes in `inclusion`, `consistency`, `ledger_note` and a receipt's `anchor` and `key_record` are standard Base64 with padding, as in signed notes; a proof has at most 64 hashes. A receipt's `anchor` names the leaf with the log note's `origin` and `leaf_hash`, so a host can fetch the log's checkpoint and an inclusion proof and check them with `ledger_note` and `inclusion` without reading the receipt.
 
@@ -200,4 +205,17 @@ Reasons are only added, never renamed or reused.
 | `bundle_inclusion` | The inclusion proof does not lead to the checkpoint root. |
 | `bundle_opening` | The opening does not give the leaf's commitment. |
 | `bundle_anchor` | The anchor checkpoint is not the same host's `anchor` or does not include the checkpoint. |
+| `map_shape` | A `map.proof@1`, one of its sides or another `{ heads, root }` does not have its shape. |
+| `map_id` | The key's `id` does not have its shape, or the root is of another map than the `id` names. |
+| `map_heads` | The heads leaf has no opening, its record is not a `map.heads@1`, or it is of another log. |
+| `map_root` | A root record does not have its shape, or its totals go back. |
+| `map_root_not_in_heads` | The heads leaf does not list the root record's digest under its map and `seq`. |
+| `map_time` | A root is dated after its checkpoint, `at` is not before the root, or `before` is not before `at`. |
+| `map_path` | The path does not fold to the root, or ends at a leaf off the key's prefix. |
+| `map_value` | The value does not hash to the path's end, or a value is given for an absent key or missing for a present one. |
+| `map_value_shape` | The value does not have its shape or names another key. |
+| `map_leaves` | The leaves are not in key order, leave the prefix, mix maps, or their index contents do not match. |
+| `map_children` | The children are not 2, 4, … or 256 subtrees, or one does not have its shape. |
+| `map_scope` | The proof answers another requested key, the proofs compared are of different logs or maps, or a root in `between` is not between them. |
+| `map_fold` | The subtree's hash is not the root record's `root`: the leaves folded are not the map at that root. |
 | `mandate_record_type` | The record is neither a `mandate.use@1` nor a `mandate.close@1`. |

@@ -218,3 +218,87 @@ The pre-genesis bundle v1 without its JWKS copy, since trust comes from `trust`:
 - `opening`: the commitment of `{ salt, record }` (`clavis.commit.v1`) is the leaf's `c`. The record is the app's JSON (RFC 8785 numbers; repeated keys refused).
 - `anchor`: the anchor leaf `{ v: 1, c: hex(SHA-256(UTF-8(checkpoint body))) }` is in the anchor checkpoint (origin `<same host>/ledger/anchor`), and each TSA token stamps the anchor checkpoint body. A token counts when it verifies against the TSA registry at its genTime; tokens that do not verify are not counted (as now).
 - The `bundle` operation answers `committed_by` (the checkpoint time), `opening` (true when given and matching) and `anchor` (`anchored_by`, `tsa` count) or null.
+
+## 10. Agreement maps
+
+A map shows what one key of an organisation's records holds at a time, or that it holds nothing. The writer that decides the records keeps the map; its roots go into the organisation's log through `map.heads@1` leaves.
+
+### 10.1 The tree
+
+- Keys have 256 bits, read from the most significant bit of the first byte; 0 goes left, 1 right.
+- The keys decide the shape: a subtree without keys is empty, a subtree with one key is that key's leaf (at any depth), a subtree with two or more is a node split on the next bit.
+- Hashes (each label is followed by a 0x00 byte, except the empty label):
+
+```text
+E      = SHA-256("clavis.map.empty.v1")                       the empty subtree and the root of an empty map
+vh     = SHA-256("clavis.map.value.v1" ‖ 0x00 ‖ JCS(value))
+leaf   = SHA-256("clavis.map.leaf.v1"  ‖ 0x00 ‖ key ‖ vh)
+node   = SHA-256("clavis.map.node.v1"  ‖ 0x00 ‖ left ‖ right)
+key    = SHA-256("clavis.map.key.v1"   ‖ 0x00 ‖ JCS(id))
+```
+
+- `map.path@1`: `{ type, siblings, end }`. `siblings` (0–256 standard Base64 hashes) run from the root's children down to the level above the end; their count is the end's depth. `end` is `{ kind: "empty" }` or `{ kind: "leaf", key, value }` (the leaf's key and `vh`). Folding from the end to the root with the asked key's bits gives the root. An end that is the asked key's leaf holds it; an empty end, or another key's leaf that shares the asked key's first depth bits, holds nothing; any other leaf is not a path for that key.
+
+### 10.2 Keys
+
+| `id.type` | Members | Map |
+|---|---|---|
+| `agreement.series.key@1` | `org` (Org ID), `subject` (ID, ≤ 200), `app` (App ID), `situation` (ID, ≤ 64) | `agreements/<n>` |
+| `agreement.refusals.key@1` | the same | `agreements/<n>` |
+
+`n` is `u32` big-endian of the first four bytes of SHA-256(`clavis.lex.org.v1` ‖ 0x00 ‖ `subject`), modulo 16 (the organisation writer that holds the person). The verifier derives the map's name from the `id`, so a root of another map cannot answer for the key.
+
+### 10.3 Values
+
+Times are Unix milliseconds, safe integers ≥ 0.
+
+- An entry: `{ decision, action, outcome, decided_at, effective_at, leaf, c, index, index_v }`. `leaf` (the decision leaf's position in the org log) and `c` (64 hex) are null until filled. `index` is a digest of the index contents and `index_v` (≥ 1) their projection version; both null or both set. Entries are in strictly increasing `effective_at` (the writer's clock).
+- `agreement.series@1`: `{ type, org, subject, app, situation, threads, dropped }`, the four identity members equal to the `id`'s. A thread is `{ thread, opened_at, closed, decisions }`: `decisions` start with a `grant` dated `opened_at`; `closed` is null, `{ at, by: "decision", decision }` (the last decision, a `withdraw`, dated `at`) or `{ at, by: "account" }` (after the last decision, no `withdraw`). Threads are in order, each but the last closed before the next opens. `dropped` counts threads retention removed; a series has threads or `dropped` > 0.
+- `agreement.refusals@1`: `{ type, org, subject, app, situation, decisions, dropped }`; entries are `deny`, `abort` or a `withdraw` with nothing open.
+
+### 10.4 Roots and heads
+
+- `map.root@1`: `{ type, map, seq, prev, root, as_of, erased_total, swept_total, restored? }`. `seq` ≥ 1; `prev` is the previous root's digest, null exactly when `seq` is 1. `root` is the tree's root (standard Base64). `as_of`: the root holds every change the writer made before it and none after. `erased_total` and `swept_total` count the keys removed so far by erasure instructions and by retention. `restored`: the `seq` of the log's last root when the writer was restored from a backup and continued from it.
+- `map.heads@1` (the record of an org log leaf, `clavis.commit.v1`): `{ type, log, seq, prev, roots }`. `roots` (1–1000) are `{ map, seq, digest }` in (map, seq) order, each map's roots consecutive. The leaf lists root digests only; a proof carries the one root record it uses.
+
+### 10.5 Proofs
+
+`map.proof@1`: `{ type, id, at, before? }`. `at` is `{ heads, root, path, value }`: `heads` a `ledger.bundle@1` string of the heads leaf with its opening, `root` a `map.root@1`, `value` the key's value or null. `before` is `{ heads, root }` without a path.
+
+Pass the expected key as `expect_id` when looking up a specific organisation, App, subject and situation. The verifier checks that every field of this key matches the proof.
+
+The verifier checks: the bundle (§9) and its opening; the heads record's `log` is the bundle's and the `id`'s; the root's map is the `id`'s, its digest is listed in the heads under its map and `seq`; `as_of` ≤ (checkpoint time + 1) × 1000; the path folds to `root`; the value hashes to the end and has its shape. With `at` (the time T asked about), T < `at.as_of`; with `before`, also `before.seq` < `at.seq` and `before.as_of` ≤ T, and the totals do not go back.
+
+The reading at T (`state`) uses the retention floor of 730 days (a thread stays at least that long after it closes; the floor is a constant of the rules):
+
+| Key | `state` |
+|---|---|
+| series with a thread open at T | `open`, with the `thread` and the `decision` in force |
+| series, no thread open at T, one opened before T | `closed` |
+| series, no thread before T, `dropped` 0 | `none` |
+| series, no thread before T, `dropped` > 0 | `closed` when `at.as_of` < T + floor, else `dropped` |
+| absent, with `before` and no removal since | `none` |
+| absent, removed by retention only since, `at.as_of` < T + floor | `not_open` |
+| absent otherwise | `none_or_removed` |
+
+### 10.6 Leaves, subtrees and whole maps
+
+`map.leaf@1`: `{ type, id, value, index? }`. `index` maps each decision of an agreement value whose entry has an `index` digest to the contents with that digest, and holds nothing else; other values have none. `map_subtree` checks a prefix's leaves (key order, inside the prefix, one map) and answers their canonical subtree with the leaves it verified; `map_combine` folds sibling subtrees in key order (an empty and a leaf collapse to the leaf). Folding all of a writer's prefixes gives its root.
+
+A writer's whole map at one of its roots comes as files. For every prefix of one depth, `<prefix>.jsonl` (the prefix in `0` and `1` characters) holds the prefix's leaves as canonical `map.leaf@1` lines in key order, each ending with a line feed; a prefix without keys has an empty file. `root.json` is the root and the heads leaf that lists it, `{ heads, root }` as in a proof's `before`. A host checks each file with `map_subtree` (each nonempty file must answer the expected organisation's log and the root's map name), folds the subtrees with `map_combine` (up to 256 siblings at a time, in key order) into one, and passes it with `root.json` to `map_root`.
+
+`map_root` checks the root as §10.5 checks a side: the bundle and its opening, a `map.heads@1` of the bundle's log that lists the root's digest under its map and `seq`, and `as_of` ≤ (checkpoint time + 1) × 1000. The subtree's hash must then be the root's `root`, so the files hold the keys and values the root holds, and no others. The root record has no count: the answer's `count` is the subtree's.
+
+### 10.7 Conflicts
+
+`map_conflict` reads two proofs of one log and map (ordered by `seq`) and answers the first rule they break:
+
+| Rule | |
+|---|---|
+| `c1` | The same `seq` with different roots. |
+| `c2` | Consecutive roots whose `prev` is not the earlier digest, or a later root not dated later. |
+| `c3` | For one key: the later value has an entry dated before the earlier root's `as_of` that the earlier value lacks. |
+| `c4` | An entry changed, except `leaf`, `c` and `index` going from null to a value once and `index` changing with a higher `index_v`; a closed thread reopened or changed. |
+| `c5` | An entry or thread gone without `dropped` rising or within the retention floor; a key gone with neither total rising, or by retention within the floor. |
+
+`restored` is true when the later root, or a root given in `between`, carries `restored`.
