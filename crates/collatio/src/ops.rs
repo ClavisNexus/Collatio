@@ -20,6 +20,7 @@ use crate::mandate::{
     GrantContext, MANDATE_CLOSE_1, MANDATE_USE_1, Totals, parse_close, parse_terms, parse_use,
     read_grant, record_digest, verify_app_jwt, verify_close, verify_sigs, verify_use,
 };
+use crate::map;
 use crate::reason::Reason;
 use crate::receipt::{Expect, Kind, RECEIPT_1, RECEIPT_APP_1, verify_receipt};
 use crate::trust::{PublicKey, document, read_trust};
@@ -68,6 +69,11 @@ fn dispatch(op: &str, outer: &Value) -> Result<Object, Reason> {
         "mandate_record" => op_mandate_record(outer),
         "chain" => op_chain(outer),
         "bundle" => op_bundle(outer),
+        "map_proof" => op_map_proof(outer),
+        "map_conflict" => op_map_conflict(outer),
+        "map_subtree" => op_map_subtree(outer),
+        "map_combine" => op_map_combine(outer),
+        "map_root" => op_map_root(outer),
         _ => Err(Reason::UnknownOp),
     }
 }
@@ -547,6 +553,150 @@ fn op_bundle(outer: &Value) -> Result<Object, Reason> {
         ("opening", Value::Bool(ok.opening)),
         ("anchor", anchor),
     ]))
+}
+
+fn sub_answer(sub: &map::Sub) -> Vec<(&'static str, Value)> {
+    alloc::vec![
+        ("kind", Value::from(sub.kind.as_str())),
+        ("hash", Value::from(map::b64(&sub.hash).as_str())),
+        ("count", uint(sub.count)),
+    ]
+}
+
+/// One key under one root of an organisation's map, and what it says at the time asked about.
+fn op_map_proof(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let at = match outer.get("at") {
+        None => None,
+        Some(v) => Some(
+            v.as_number()
+                .and_then(Number::as_safe_integer)
+                .ok_or(Reason::InputMalformed)?,
+        ),
+    };
+    let ok = map::verify_proof(&trust, &document(outer.get("evidence"))?, at)?;
+    if let Some(expected) = outer.get("expect_id") {
+        let id = map::parse_id(expected).ok_or(Reason::MapId)?;
+        if id.key != ok.id.key {
+            return Err(Reason::MapScope);
+        }
+    }
+    let side = &ok.at;
+    let value = side
+        .found
+        .as_ref()
+        .and_then(|(_, v)| v.clone())
+        .unwrap_or(Value::Null);
+    let mut members = alloc::vec![
+        ("log", Value::from(ok.id.log.as_str())),
+        ("map", Value::from(ok.id.map.as_str())),
+        ("key", Value::from(map::b64(&ok.id.key).as_str())),
+        ("seq", int(side.root.seq)),
+        ("as_of", int(side.root.as_of)),
+        ("committed_by", uint(side.committed_by)),
+        ("anchored_by", side.anchored_by.map_or(Value::Null, uint)),
+        ("present", Value::Bool(!matches!(value, Value::Null))),
+        ("value", value),
+    ];
+    if let Some((erased, swept)) = ok.removed_since {
+        members.push(("erased_since", int(erased)));
+        members.push(("swept_since", int(swept)));
+    }
+    if let Some(r) = &ok.reading {
+        members.push(("state", Value::from(r.state.as_str())));
+        if let Some(t) = &r.thread {
+            members.push(("thread", Value::from(t.as_str())));
+        }
+        if let Some(d) = &r.decision {
+            members.push(("decision", Value::from(d.as_str())));
+        }
+    }
+    Ok(obj(members))
+}
+
+/// Two proofs of one map against each other: the rule they break, if any.
+fn op_map_conflict(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let between = match outer.get("between") {
+        None => Vec::new(),
+        Some(v) => v.as_array().ok_or(Reason::InputMalformed)?.to_vec(),
+    };
+    let ok = map::verify_conflict(
+        &trust,
+        &document(outer.get("first"))?,
+        &document(outer.get("second"))?,
+        &between,
+    )?;
+    Ok(obj(alloc::vec![
+        ("consistent", Value::Bool(ok.rule.is_none())),
+        (
+            "rule",
+            ok.rule.map_or(Value::Null, |r| Value::from(r.as_str()))
+        ),
+        ("restored", Value::Bool(ok.restored)),
+    ]))
+}
+
+/// The canonical subtree of one prefix's leaves, with the leaves it verified.
+fn op_map_subtree(outer: &Value) -> Result<Object, Reason> {
+    let prefix = outer
+        .get("prefix")
+        .and_then(Value::as_str)
+        .ok_or(Reason::InputMalformed)?;
+    let leaves = outer
+        .get("leaves")
+        .and_then(Value::as_array)
+        .ok_or(Reason::InputMalformed)?;
+    let ok = map::verify_subtree(prefix, leaves)?;
+    let verified: Vec<Value> = ok
+        .leaves
+        .iter()
+        .map(|l| {
+            let mut members = alloc::vec![("id", l.id.clone()), ("value", l.value.clone())];
+            if let Some(index) = &l.index {
+                members.push(("index", index.clone()));
+            }
+            Value::Object(obj(members))
+        })
+        .collect();
+    let mut members = sub_answer(&ok.sub);
+    let owner = ok.owner.as_ref();
+    members.push(("log", owner.map_or(Value::Null, |(log, _)| Value::from(log.as_str()))));
+    members.push(("map", owner.map_or(Value::Null, |(_, map)| Value::from(map.as_str()))));
+    members.push(("leaves", Value::Array(verified)));
+    Ok(obj(members))
+}
+
+/// The common parent of 2, 4, … or 256 sibling subtrees.
+fn op_map_combine(outer: &Value) -> Result<Object, Reason> {
+    let children = outer
+        .get("children")
+        .and_then(Value::as_array)
+        .ok_or(Reason::InputMalformed)?;
+    Ok(obj(sub_answer(&map::combine(children)?)))
+}
+
+/// A root and the heads leaf that lists it, against the whole map folded by `map_subtree` and
+/// `map_combine`.
+fn op_map_root(outer: &Value) -> Result<Object, Reason> {
+    let trust = read_trust(outer.get("trust"))?;
+    let whole = outer
+        .get("subtree")
+        .and_then(map::parse_sub)
+        .ok_or(Reason::InputMalformed)?;
+    let side = map::verify_root(&trust, &document(outer.get("evidence"))?, &whole)?;
+    let members = alloc::vec![
+        ("log", Value::from(side.log.as_str())),
+        ("map", Value::from(side.root.map.as_str())),
+        ("seq", int(side.root.seq)),
+        ("as_of", int(side.root.as_of)),
+        ("committed_by", uint(side.committed_by)),
+        ("anchored_by", side.anchored_by.map_or(Value::Null, uint)),
+        ("erased_total", int(side.root.erased_total)),
+        ("swept_total", int(side.root.swept_total)),
+        ("count", uint(whole.count)),
+    ];
+    Ok(obj(members))
 }
 
 fn op_consistency(outer: &Value) -> Result<Object, Reason> {

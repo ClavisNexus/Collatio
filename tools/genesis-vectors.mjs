@@ -1131,6 +1131,338 @@ no(
   );
 }
 
+// ---------------------------------------------------------------- verifiable maps (FORMATS.md §10)
+// A second implementation of the writer's side: the prefix tree, paths, values, root records and the
+// heads leaf in an org log.
+
+const Z = Buffer.from([0]);
+const mapH = (...parts) => sha256(Buffer.concat(parts.map((p) => (typeof p === "string" ? Buffer.from(p) : p))));
+const mapEmpty = mapH("clavis.map.empty.v1");
+const mapVh = (value) => mapH("clavis.map.value.v1", Z, jcs(value));
+const mapLeaf = (key, vh) => mapH("clavis.map.leaf.v1", Z, key, vh);
+const mapNode = (l, r) => mapH("clavis.map.node.v1", Z, l, r);
+const mapKey = (id) => mapH("clavis.map.key.v1", Z, jcs(id));
+const mapBit = (key, i) => (key[i >> 3] >> (7 - (i & 7))) & 1;
+const EMPTY_SUB = { kind: "empty", hash: mapEmpty, count: 0 };
+function mapPair(a, b) {
+  if (a.kind === "empty" && b.kind !== "node") return b;
+  if (b.kind === "empty" && a.kind === "leaf") return a;
+  return { kind: "node", hash: mapNode(a.hash, b.hash), count: a.count + b.count };
+}
+function mapBuild(items, depth = 0) {
+  if (items.length === 0) return EMPTY_SUB;
+  if (items.length === 1) return { kind: "leaf", hash: mapLeaf(items[0].key, items[0].vh), count: 1 };
+  return mapPair(
+    mapBuild(items.filter((x) => mapBit(x.key, depth) === 0), depth + 1),
+    mapBuild(items.filter((x) => mapBit(x.key, depth) === 1), depth + 1),
+  );
+}
+function mapPath(items, key) {
+  let set = items;
+  const siblings = [];
+  for (let depth = 0; set.length > 1; depth++) {
+    const b = mapBit(key, depth);
+    siblings.push(mapBuild(set.filter((x) => mapBit(x.key, depth) !== b), depth + 1).hash);
+    set = set.filter((x) => mapBit(x.key, depth) === b);
+  }
+  const end = set.length === 0 ? { kind: "empty" } : { kind: "leaf", key: b64(set[0].key), value: b64(set[0].vh) };
+  return { type: "map.path@1", siblings: siblings.map(b64), end };
+}
+const subOf = (s) => ({ kind: s.kind, hash: b64(s.hash), count: s.count });
+const agreementShard = (subject) => sha256(`clavis.lex.org.v1\0${subject}`).readUInt32BE(0) % 16;
+const shard2 = Array.from({ length: 400 }, (_, i) => `subject-${i}`).filter((s) => agreementShard(s) === 2);
+const otherShard = Array.from({ length: 50 }, (_, i) => `subject-${i}`).find((s) => agreementShard(s) !== 2);
+const [SUBJ_A, SUBJ_B, SUBJ_C, SUBJ_D] = shard2;
+const T0 = IAT * 1000;
+const DAY = 86_400_000;
+const seriesId = (subject, situation = "marketing") => ({ type: "agreement.series.key@1", org: ORG_LOG, subject, app: APP, situation });
+const refusalsId = (subject, situation = "marketing") => ({ type: "agreement.refusals.key@1", org: ORG_LOG, subject, app: APP, situation });
+const indexContents = (n) => ({ pack: "EEA", member_state: "DE", reason: "granted", v: n });
+const entry = (decision, action, effective, extra = {}) => ({
+  decision,
+  action,
+  outcome: action === "deny" ? "deny" : "pass",
+  decided_at: effective - 3,
+  effective_at: effective,
+  leaf: 10,
+  c: hex(bytes(`entry ${decision}`)),
+  index: digestOf(indexContents(1)),
+  index_v: 1,
+  ...extra,
+});
+const thread1 = {
+  thread: "th1",
+  opened_at: T0 + 1000,
+  closed: { at: T0 + 9000, by: "decision", decision: "d3" },
+  decisions: [entry("d1", "grant", T0 + 1000), entry("d2", "grant", T0 + 5000), entry("d3", "withdraw", T0 + 9000)],
+};
+const thread2 = { thread: "th2", opened_at: T0 + 20000, closed: null, decisions: [entry("d4", "grant", T0 + 20000)] };
+const series = (subject, threads, dropped = 0) => ({ type: "agreement.series@1", org: ORG_LOG, subject, app: APP, situation: "marketing", threads, dropped });
+const seriesA = series(SUBJ_A, [thread1, thread2]);
+const seriesB = series(SUBJ_B, [
+  { thread: "tb", opened_at: T0 + 2000, closed: null, decisions: [entry("b1", "grant", T0 + 2000, { leaf: null, c: null, index: null, index_v: null })] },
+]);
+const seriesC = series(SUBJ_C, [{ thread: "tc", opened_at: T0 + 25000, closed: null, decisions: [entry("c1", "grant", T0 + 25000)] }], 2);
+const refusalsA = { type: "agreement.refusals@1", org: ORG_LOG, subject: SUBJ_A, app: APP, situation: "marketing", decisions: [entry("r1", "deny", T0 + 500)], dropped: 0 };
+const agreementLeaves = [
+  { id: seriesId(SUBJ_A), value: seriesA },
+  { id: refusalsId(SUBJ_A), value: refusalsA },
+  { id: seriesId(SUBJ_B), value: seriesB },
+  { id: seriesId(SUBJ_C), value: seriesC },
+];
+const mapItems = (leaves) =>
+  leaves.map(({ id, value }) => ({ id, value, key: mapKey(id), vh: mapVh(value) })).sort((a, b) => Buffer.compare(a.key, b.key));
+/** The index contents an agreement value's entries name, keyed by decision. */
+function indexOf(value) {
+  const entries = value.threads ? value.threads.flatMap((t) => t.decisions) : value.decisions ?? [];
+  const named = entries.filter((e) => e.index);
+  return named.length ? Object.fromEntries(named.map((e) => [e.decision, indexContents(1)])) : undefined;
+}
+const leafDoc = (x, index = indexOf(x.value)) => JSON.stringify({ type: "map.leaf@1", id: x.id, value: x.value, ...(index ? { index } : {}) });
+/** The heads leaf in an org log, with its opening, as a `ledger.bundle@1` string. */
+function headsBundle(record, label, { index = 1, time = IAT + 60, log = ORG_LOG } = {}) {
+  const s = bytes(`map heads ${label}`);
+  const c = hex(sha256(Buffer.concat([Buffer.from("clavis.commit.v1"), s, Buffer.from(jcs(record))])));
+  const hashes = [0, 1, 2, 3].map((i) => (i === index ? leafHash(c) : leafHash(hex(bytes(`map ${label} leaf ${i}`)))));
+  const cpBody = `${HOST}/ledger/${log}\n4\n${b64(mth(hashes))}\ntime ${time}\n`;
+  const receiptBody = `clavis.ledger.receipt/v1\n${HOST}/ledger/${log}\n${index}\n${b64(hashes[index])}\n`;
+  return JSON.stringify({
+    type: "ledger.bundle@1",
+    log,
+    leaf: { v: 1, c },
+    index,
+    receipt: note(receiptBody, ledgerFp0, KEYS.fp0.kid),
+    checkpoint: note(cpBody, ledgerFp0, KEYS.fp0.kid),
+    inclusion: path(index, hashes).map(b64),
+    opening: { salt: b64u(s), record },
+  });
+}
+/** A map at one root: its root record, a heads leaf that lists it, and the sides of proofs. */
+function mapAt(leaves, { map = "agreements/2", seq = 5, prev, as_of = T0 + 30000, erased_total = 0, swept_total = 0, restored, headsLog = ORG_LOG, listed = true } = {}) {
+  const items = mapItems(leaves);
+  const tree = mapBuild(items);
+  const root = {
+    type: "map.root@1",
+    map,
+    seq,
+    prev: prev !== undefined ? prev : seq === 1 ? null : digestOf({ root: seq - 1 }),
+    root: b64(tree.hash),
+    as_of,
+    erased_total,
+    swept_total,
+    ...(restored !== undefined ? { restored } : {}),
+  };
+  const listedRoot = listed ? root : { ...root, as_of: root.as_of + 1 };
+  const heads = { type: "map.heads@1", log: headsLog, seq: 3, prev: digestOf({ heads: 2 }), roots: [{ map, seq, digest: digestOf(listedRoot) }] };
+  const bundle = headsBundle(heads, `${map}/${seq}/${as_of}/${erased_total}/${swept_total}/${restored}/${root.root}`);
+  const valueFor = (key) => items.find((x) => x.key.equals(key))?.value ?? null;
+  return {
+    items,
+    tree,
+    root,
+    side: (id) => ({ heads: bundle, root, path: mapPath(items, mapKey(id)), value: valueFor(mapKey(id)) }),
+    bare: () => ({ heads: bundle, root }),
+  };
+}
+const proofDoc = (id, at, before) => ({ type: "map.proof@1", id, at, ...(before ? { before } : {}) });
+const proofCall = (doc, t) => ({ op: "map_proof", trust: trust(), evidence: JSON.stringify(doc), ...(t !== undefined ? { at: t } : {}) });
+
+const m5 = mapAt(agreementLeaves);
+const m4 = mapAt(agreementLeaves, { seq: 4, as_of: T0 + 100 });
+const idA = seriesId(SUBJ_A);
+for (const [field, other] of Object.entries({ org: `eu2.${APP}`, app: "00000000-0000-4000-a000-000000000011", subject: SUBJ_B, situation: "terminal" })) {
+  no(`map_proof: expected another ${field}`, { ...proofCall(proofDoc(idA, m5.side(idA))), expect_id: { ...idA, [field]: other } }, "map_scope");
+}
+ok("map_proof: expected agreement key", { ...proofCall(proofDoc(idA, m5.side(idA))), expect_id: idA }, { present: true });
+ok("map_proof: a series open at T, after a reconsent", proofCall(proofDoc(idA, m5.side(idA)), T0 + 6000), {
+  log: ORG_LOG,
+  map: "agreements/2",
+  seq: 5,
+  as_of: T0 + 30000,
+  committed_by: IAT + 60,
+  present: true,
+  value: seriesA,
+  state: "open",
+  thread: "th1",
+  decision: "d2",
+});
+ok("map_proof: the series open again later", proofCall(proofDoc(idA, m5.side(idA)), T0 + 22000), { state: "open", thread: "th2", decision: "d4" });
+ok("map_proof: the series closed between its threads", proofCall(proofDoc(idA, m5.side(idA)), T0 + 12000), { state: "closed" });
+ok("map_proof: before the first thread", proofCall(proofDoc(idA, m5.side(idA)), T0 + 500), { state: "none" });
+ok("map_proof: without a time, no reading", proofCall(proofDoc(idA, m5.side(idA))), { present: true, key: b64(mapKey(idA)) });
+{
+  const idD = seriesId(SUBJ_D);
+  ok("map_proof: an absent key with nothing removed since before", proofCall(proofDoc(idD, m5.side(idD), m4.bare()), T0 + 1000), {
+    present: false,
+    value: null,
+    state: "none",
+    erased_since: 0,
+    swept_since: 0,
+  });
+  ok("map_proof: an absent key without before", proofCall(proofDoc(idD, m5.side(idD)), T0 + 1000), { state: "none_or_removed" });
+  const erased = mapAt(agreementLeaves, { erased_total: 1 });
+  ok("map_proof: an absent key after an erasure", proofCall(proofDoc(idD, erased.side(idD), m4.bare()), T0 + 1000), { state: "none_or_removed", erased_since: 1 });
+  const swept = mapAt(agreementLeaves, { swept_total: 3 });
+  ok("map_proof: an absent key after retention, within the floor", proofCall(proofDoc(idD, swept.side(idD), m4.bare()), T0 + 1000), { state: "not_open", swept_since: 3 });
+  const old = mapAt(agreementLeaves, { seq: 2, as_of: T0 - 800 * DAY });
+  ok("map_proof: an absent key after retention, past the floor", proofCall(proofDoc(idD, swept.side(idD), old.bare()), T0 - 799 * DAY), { state: "none_or_removed" });
+  no("map_proof: before after T", proofCall(proofDoc(idD, m5.side(idD), m4.bare()), T0 + 50), "map_time");
+}
+{
+  const idC = seriesId(SUBJ_C);
+  ok("map_proof: dropped threads closed before T", proofCall(proofDoc(idC, m5.side(idC)), T0 + 2000), { state: "closed" });
+  ok("map_proof: dropped threads that may have been open", proofCall(proofDoc(idC, m5.side(idC)), T0 - 800 * DAY), { state: "dropped" });
+}
+ok("map_proof: refusals, without a reading", proofCall(proofDoc(refusalsId(SUBJ_A), m5.side(refusalsId(SUBJ_A)))), { present: true, value: refusalsA });
+no("map_proof: a root of another shard", proofCall(proofDoc(seriesId(otherShard), m5.side(seriesId(otherShard)))), "map_id");
+no("map_proof: a root the heads do not list", proofCall(proofDoc(idA, mapAt(agreementLeaves, { listed: false }).side(idA))), "map_root_not_in_heads");
+{
+  const side = m5.side(idA);
+  no("map_proof: a path that folds elsewhere", proofCall(proofDoc(idA, { ...side, path: { ...side.path, siblings: [...side.path.siblings].reverse() } })), "map_path");
+  no("map_proof: another value", proofCall(proofDoc(idA, { ...side, value: { ...seriesA, dropped: 1 } })), "map_value");
+  no("map_proof: a value for an absent key", proofCall(proofDoc(seriesId(SUBJ_D), { ...m5.side(seriesId(SUBJ_D)), value: seriesA })), "map_value");
+  no("map_proof: T not before the root", proofCall(proofDoc(idA, side), T0 + 30000), "map_time");
+  no("map_proof: an extra member", proofCall({ ...proofDoc(idA, side), note: "x" }), "map_shape");
+}
+{
+  const mw = mapAt([{ id: idA, value: { ...seriesA, subject: SUBJ_B } }]);
+  no("map_proof: a value naming another key", proofCall(proofDoc(idA, mw.side(idA))), "map_value_shape");
+  const late = mapAt(agreementLeaves, { as_of: (IAT + 62) * 1000 });
+  no("map_proof: a root dated after its checkpoint", proofCall(proofDoc(idA, late.side(idA))), "map_time");
+  const foreign = mapAt(agreementLeaves, { headsLog: `eu1.${MANDATE_ID}` });
+  no("map_proof: heads of another log", proofCall(proofDoc(idA, foreign.side(idA))), "map_heads");
+}
+
+// map_subtree and map_combine: a writer's whole map, by prefix.
+{
+  const all = m5.items;
+  ok("map_subtree: the whole map at depth 0", { op: "map_subtree", prefix: "", leaves: all.map((x) => leafDoc(x)) }, { ...subOf(m5.tree), map: "agreements/2" });
+  const half = (bit) => all.filter((x) => mapBit(x.key, 0) === bit);
+  const left = mapBuild(half(0), 1);
+  const right = mapBuild(half(1), 1);
+  ok("map_subtree: one half", { op: "map_subtree", prefix: "0", leaves: half(0).map((x) => leafDoc(x)) }, subOf(left));
+  ok("map_combine: the halves give the root", { op: "map_combine", children: [subOf(left), subOf(right)] }, subOf(m5.tree));
+  ok("map_combine: an empty and a leaf collapse to the leaf", { op: "map_combine", children: [subOf(EMPTY_SUB), subOf(mapBuild(all.slice(0, 1)))] }, subOf(mapBuild(all.slice(0, 1))));
+  no("map_combine: three children", { op: "map_combine", children: [subOf(left), subOf(right), subOf(EMPTY_SUB)] }, "map_children");
+  no("map_subtree: leaves out of order", { op: "map_subtree", prefix: "", leaves: [...all].reverse().map((x) => leafDoc(x)) }, "map_leaves");
+  const off = mapBit(all[0].key, 0) === 0 ? "1" : "0";
+  no("map_subtree: a leaf outside the prefix", { op: "map_subtree", prefix: off, leaves: [leafDoc(all[0])] }, "map_leaves");
+  const a = all.find((x) => x.value === seriesA);
+  no("map_subtree: index contents that do not match", { op: "map_subtree", prefix: "", leaves: [leafDoc(a, { ...indexOf(a.value), d1: indexContents(2) })] }, "map_leaves");
+}
+
+
+{
+  const otherOrg = `eu2.${APP}`;
+  const leaves = [agreementLeaves[0], { id: { ...seriesId(SUBJ_B), org: otherOrg }, value: { ...seriesB, org: otherOrg } }];
+  no("map_subtree: two organisations in one shard file", { op: "map_subtree", prefix: "", leaves: mapItems(leaves).map((v) => leafDoc(v)) }, "map_leaves");
+}
+// map_root: a writer's whole map as files (FORMATS.md §10.6), one per prefix at depth 1, and its root with the
+// heads leaf. The root is the one after m5, with a series for SUBJ_D, so that both files hold leaves. The same
+// files are written to vectors/genesis/map-export-1/ as a host reads them.
+{
+  const seriesD = series(SUBJ_D, [{ thread: "td", opened_at: T0 + 32000, closed: null, decisions: [entry("e1", "grant", T0 + 32000)] }]);
+  const exportAt = (over = {}) =>
+    mapAt([...agreementLeaves, { id: seriesId(SUBJ_D), value: seriesD }], { seq: 6, prev: digestOf(m5.root), as_of: T0 + 40000, ...over });
+  const exp = exportAt();
+  const all = exp.items;
+  const leafLine = (x) => {
+    const index = indexOf(x.value);
+    return jcs({ type: "map.leaf@1", id: x.id, value: x.value, ...(index ? { index } : {}) });
+  };
+  const files = [0, 1].map((bit) => {
+    const items = all.filter((x) => mapBit(x.key, 0) === bit);
+    return { prefix: `${bit}`, lines: items.map(leafLine), sub: mapBuild(items, 1) };
+  });
+  if (files.some((f) => f.lines.length === 0)) throw new Error("map-export-1: each file should hold leaves");
+  const rootJson = JSON.stringify(exp.bare());
+  const dir = join(root, "vectors", "genesis", "map-export-1");
+  mkdirSync(dir, { recursive: true });
+  for (const f of files) writeFileSync(join(dir, `${f.prefix}.jsonl`), f.lines.map((l) => `${l}\n`).join(""));
+  writeFileSync(join(dir, "root.json"), rootJson);
+
+  for (const f of files) {
+    ok(`map_subtree: the export's ${f.prefix}.jsonl`, { op: "map_subtree", prefix: f.prefix, leaves: f.lines }, { ...subOf(f.sub), map: "agreements/2" });
+  }
+  ok("map_combine: the export's two files", { op: "map_combine", children: files.map((f) => subOf(f.sub)) }, subOf(exp.tree));
+  const whole = subOf(exp.tree);
+  const rootCall = (evidence, subtree = whole) => ({
+    op: "map_root",
+    trust: trust(),
+    evidence: typeof evidence === "string" ? evidence : JSON.stringify(evidence),
+    subtree,
+  });
+  ok("map_root: the export's root.json and its files folded", rootCall(rootJson), {
+    log: ORG_LOG,
+    map: "agreements/2",
+    seq: 6,
+    as_of: T0 + 40000,
+    committed_by: IAT + 60,
+    anchored_by: null,
+    erased_total: 0,
+    swept_total: 0,
+    count: 5,
+  });
+  ok("map_subtree: an empty prefix's file", { op: "map_subtree", prefix: "1", leaves: [] }, { ...subOf(EMPTY_SUB), map: null });
+  ok("map_root: a writer without keys", rootCall(mapAt([], { seq: 1 }).bare(), subOf(EMPTY_SUB)), { map: "agreements/2", seq: 1, count: 0 });
+
+  no("map_root: files without one of the root's keys", rootCall(rootJson, subOf(mapBuild(all.filter((x) => x.value !== seriesB)))), "map_fold");
+  {
+    const unlisted = exportAt({ listed: false });
+    no("map_root: a root the heads leaf does not list", rootCall(unlisted.bare()), "map_root_not_in_heads");
+    const bundle = JSON.parse(unlisted.bare().heads);
+    const record = { ...bundle.opening.record, roots: [{ map: "agreements/2", seq: 6, digest: digestOf(unlisted.root) }] };
+    no(
+      "map_root: a heads record changed to list the root",
+      rootCall({ heads: JSON.stringify({ ...bundle, opening: { ...bundle.opening, record } }), root: unlisted.root }),
+      "bundle_opening",
+    );
+  }
+  {
+    const bundle = JSON.parse(exp.bare().heads);
+    no(
+      "map_root: a heads leaf the checkpoint does not include",
+      rootCall({ heads: JSON.stringify({ ...bundle, inclusion: [...bundle.inclusion].reverse() }), root: exp.root }),
+      "bundle_inclusion",
+    );
+    const { opening: _o, ...leafOnly } = bundle;
+    no("map_root: a heads leaf without its opening", rootCall({ heads: JSON.stringify(leafOnly), root: exp.root }), "map_heads");
+  }
+  no("map_root: heads of another log", rootCall(exportAt({ headsLog: `eu1.${MANDATE_ID}` }).bare()), "map_heads");
+  no("map_root: a root dated after its checkpoint", rootCall(exportAt({ as_of: (IAT + 62) * 1000 }).bare()), "map_time");
+  no("map_root: a proof's side, with its path", rootCall(exp.side(idA)), "map_shape");
+  no("map_root: the subtree with map_subtree's other members", rootCall(rootJson, { ...whole, map: "agreements/2" }), "input_malformed");
+  no("map_root: an empty subtree of another hash", rootCall(rootJson, { ...subOf(EMPTY_SUB), hash: whole.hash }), "input_malformed");
+}
+
+// map_conflict: two proofs of one map.
+{
+  const conflict = (first, second) => ({ op: "map_conflict", trust: trust(), first: JSON.stringify(first), second: JSON.stringify(second) });
+  const withA = (value) => agreementLeaves.map((l) => (l.value === seriesA ? { ...l, value } : l));
+  const early = mapAt(withA(series(SUBJ_A, [thread1])), { seq: 4, as_of: T0 + 15000 });
+  const late = mapAt(agreementLeaves, { prev: digestOf(early.root) });
+  ok("map_conflict: a later root that only adds", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, late.side(idA))), { consistent: true, rule: null, restored: false });
+  const twin = mapAt(agreementLeaves.map((l) => (l.value === seriesB ? { ...l, value: series(SUBJ_B, [thread2]) } : l)), { seq: 4, as_of: T0 + 15000 });
+  ok("map_conflict: two roots under one seq", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, twin.side(idA))), { consistent: false, rule: "c1" });
+  ok("map_conflict: a next root that does not follow", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, mapAt(agreementLeaves, { prev: digestOf({ other: 1 }) }).side(idA))), { rule: "c2" });
+  const thX = {
+    thread: "thx",
+    opened_at: T0 + 10000,
+    closed: { at: T0 + 11000, by: "decision", decision: "x2" },
+    decisions: [entry("x1", "grant", T0 + 10000), entry("x2", "withdraw", T0 + 11000)],
+  };
+  const backdated = mapAt(withA(series(SUBJ_A, [thread1, thX, thread2])), { prev: digestOf(early.root) });
+  ok("map_conflict: an entry dated before the earlier root", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, backdated.side(idA))), { rule: "c3" });
+  const t1changed = { ...thread1, decisions: [thread1.decisions[0], { ...thread1.decisions[1], outcome: "other" }, thread1.decisions[2]] };
+  const changed = mapAt(withA(series(SUBJ_A, [t1changed, thread2])), { prev: digestOf(early.root) });
+  ok("map_conflict: an entry changed", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, changed.side(idA))), { rule: "c4" });
+  const gone = mapAt(withA(series(SUBJ_A, [thread2])), { prev: digestOf(early.root) });
+  ok("map_conflict: a thread gone without retention", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, gone.side(idA))), { rule: "c5" });
+  const restoredRoot = mapAt(agreementLeaves, { prev: digestOf(early.root), restored: 4 });
+  ok("map_conflict: a restored writer is marked", conflict(proofDoc(idA, early.side(idA)), proofDoc(idA, restoredRoot.side(idA))), { restored: true });
+
+}
+
 const out = join(root, "vectors", "genesis", "ops-1.json");
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${JSON.stringify({ about: "Calls and the answers FORMATS.md requires. Written by tools/genesis-vectors.mjs.", cases }, null, 1)}\n`);

@@ -49,6 +49,93 @@ fn genesis_ops() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
+fn call(members: Vec<(&str, Value)>) -> Value {
+    let mut input = Object::default();
+    for (k, v) in members {
+        input.insert(k.into(), v);
+    }
+    let got = answer(&Value::Object(input));
+    assert_eq!(
+        got.get("ok"),
+        Some(&Value::Bool(true)),
+        "{}",
+        canonical(&got)
+    );
+    got
+}
+
+/// The `{ kind, hash, count }` of a `map_subtree` or `map_combine` answer.
+fn subtree_of(got: &Value) -> Value {
+    let mut sub = Object::default();
+    for k in ["kind", "hash", "count"] {
+        sub.insert(k.into(), got.get(k).unwrap().clone());
+    }
+    Value::Object(sub)
+}
+
+/// The whole-map files as a host reads them (FORMATS.md §10.6): each prefix file through
+/// `map_subtree`, the subtrees through `map_combine`, then `map_root` with `root.json`. The files are
+/// the inputs of the genesis cases named after them, and the walk gives the `map_root` case's answer.
+#[test]
+fn map_export_folds_to_its_root() {
+    let dir = format!(
+        "{}/../../vectors/genesis/map-export-1",
+        env!("CARGO_MANIFEST_DIR")
+    );
+    let read = |name: &str| std::fs::read_to_string(format!("{dir}/{name}")).expect("export file");
+    let file = load("genesis/ops-1.json");
+    let cases = file.get("cases").and_then(Value::as_array).unwrap();
+    let case = |name: &str| {
+        cases
+            .iter()
+            .find(|c| c.get("name").and_then(Value::as_str) == Some(name))
+            .unwrap_or_else(|| panic!("no case {name:?}"))
+    };
+    let mut children = Vec::new();
+    for prefix in ["0", "1"] {
+        let text = read(&format!("{prefix}.jsonl"));
+        assert!(text.ends_with('\n'), "{prefix}.jsonl ends each line");
+        let leaves: Vec<Value> = text.lines().map(Value::from).collect();
+        let named = case(&format!("map_subtree: the export's {prefix}.jsonl"));
+        assert_eq!(
+            named.get("input").and_then(|i| i.get("leaves")),
+            Some(&Value::Array(leaves.clone()))
+        );
+        let got = call(vec![
+            ("op", Value::from("map_subtree")),
+            ("prefix", Value::from(prefix)),
+            ("leaves", Value::Array(leaves)),
+        ]);
+        assert_eq!(got.get("map"), Some(&Value::from("agreements/2")));
+        children.push(subtree_of(&got));
+    }
+    let whole = subtree_of(&call(vec![
+        ("op", Value::from("map_combine")),
+        ("children", Value::Array(children)),
+    ]));
+    let named = case("map_root: the export's root.json and its files folded");
+    let input = named.get("input").unwrap();
+    let root_json = read("root.json");
+    assert_eq!(
+        input.get("evidence").and_then(Value::as_str),
+        Some(root_json.as_str())
+    );
+    let got = call(vec![
+        ("op", Value::from("map_root")),
+        ("trust", input.get("trust").unwrap().clone()),
+        ("evidence", Value::from(root_json.as_str())),
+        ("subtree", whole),
+    ]);
+    for (k, v) in named
+        .get("answer")
+        .and_then(Value::as_object)
+        .unwrap()
+        .iter()
+    {
+        assert_eq!(got.get(k).map(canonical), Some(canonical(v)), "{k}");
+    }
+}
+
 fn hex_to_b64(h: &str) -> Value {
     let bytes: Vec<u8> = (0..h.len())
         .step_by(2)

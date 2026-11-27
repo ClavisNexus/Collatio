@@ -33,6 +33,7 @@ pub mod keylog;
 pub mod ledger;
 pub mod logs;
 pub mod mandate;
+pub mod map;
 pub mod reason;
 pub mod receipt;
 pub mod registry;

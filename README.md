@@ -31,6 +31,8 @@ The aggregated chain head `state.heads@1` is specified when aggregation is built
 
 Dependencies are pinned in `Cargo.lock` and must be at least 14 days old (`node tools/check-release-age.mjs`).
 
+Agreement proofs bind a subject, App and situation to an organisation's checkpoint. Pass the expected agreement key to `map_proof` when checking a decision at a particular time. See [Agreement maps](FORMATS.md#10-agreement-maps) for the key and [Operations](ABI.md#operations) for the input and result.
+
 ## Layout
 
 | Path | |
