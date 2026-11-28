@@ -2,7 +2,7 @@
 
 The Collatio verifier for [Clavis](https://clavis.nexus) evidence: one WebAssembly module and a JavaScript host. The module takes no imports and keeps no clock. Pass the evidence, the trust root and the time.
 
-This package ships `collatio.wasm` `sha256:pc5XVQ8EDMGaUAHhNgVP2Imkf6NvnYENuitJadgxMoI`.
+This package ships `collatio.wasm` `sha256:0fWFXlE1JJ_yxR-HsbHOV2DdvKQbbhubdycBsIeuD0E`.
 
 ## Install
 
